@@ -19,8 +19,8 @@ pub struct ImmByte;
 #[derive(Debug)]
 pub struct ImmWord;
 
-use disassembler::Disassembler;
-use instruction::{Arg8, Data8, IntoAddress, IntoArg16, IntoCond};
+// use disassembler::Disassembler;
+use disassembler::traits::{IntoArg8, IntoAddress, IntoArg16, IntoCond};
 
 pub enum Indirect {
     BC, DE, HL, ImmWord,
@@ -35,11 +35,7 @@ impl Read8 for u8 {
     }
 }
 
-impl IntoArg8 for u8 {
-    fn into_arg8(self, _disassembler: &Disassembler) -> Arg8 {
-        Arg8::Immediate(Data8(self))
-    }
-}
+
 
 
 impl Read16 for u16 {
@@ -48,9 +44,7 @@ impl Read16 for u16 {
     }
 }
 
-pub trait IntoArg8 {
-    fn into_arg8(self, disassembler: &Disassembler) -> Arg8;
-}
+
 
 pub trait Read8: IntoArg8 {
     fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8;
@@ -104,39 +98,6 @@ impl ReadCond for Not<Flag> {
     fn read_cond(self, cpu: &mut Z80) -> bool {
         let Not(flag) = self;
         !cpu.registers.get_flag(flag)
-    }
-}
-
-use instruction::Cond;
-
-impl IntoCond for bool {
-    fn into_cond(self, _disassembler: &Disassembler) -> Cond {
-        match self {
-            _ => unreachable!("invalid cond"),
-        }
-    }
-}
-
-impl IntoCond for Flag {
-    fn into_cond(self, _disassembler: &Disassembler) -> Cond {
-        match self {
-            Flag::Carry => Cond::Carry,
-            Flag::Zero => Cond::Zero,
-            Flag::Subtract => Cond::Negative,
-            _ => unreachable!("invalid cond"),
-        }
-    }
-}
-
-impl IntoCond for Not<Flag> {
-    fn into_cond(self, _disassembler: &Disassembler) -> Cond {
-        let Not(flag) = self; 
-        match flag {
-            Flag::Carry => Cond::NotCarry,
-            Flag::Zero => Cond::NotZero,
-            Flag::Subtract => Cond::Positive,
-            _ => unreachable!("invalid cond"),
-        }
     }
 }
 

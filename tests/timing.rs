@@ -70,6 +70,50 @@ mod test_z80 {
     }
 
     #[test]
+    fn ld_b_b() {
+        let (mut cpu, mut bus) = new_cpu(vec![0x40]);
+        cpu.step(&mut bus, 0);
+        assert_eq!(1, bus.m_cycles);
+        assert_eq!(4, bus.t_states);
+    }
+
+    #[test]
+    fn ld_a_n() {
+        let (mut cpu, mut bus) = new_cpu(vec![0x3e]);
+        cpu.step(&mut bus, 0);
+        assert_eq!(2, bus.m_cycles);
+        assert_eq!(7, bus.t_states);
+    }
+
+    #[test]
+    fn ld_a_mem_hl() {
+        let (mut cpu, mut bus) = new_cpu(vec![0x7e]);
+        cpu.step(&mut bus, 0);
+        assert_eq!(2, bus.m_cycles);
+        assert_eq!(7, bus.t_states);
+    }
+
+    #[test]
+    fn ld_mem_hl_b() {
+        let (mut cpu, mut bus) = new_cpu(vec![0x70]);
+        cpu.step(&mut bus, 0);
+        assert_eq!(2, bus.m_cycles);
+        assert_eq!(7, bus.t_states);
+    }
+
+    #[test]
+    fn ld_a_ix_d() {
+        let (mut cpu, mut bus) = new_cpu(vec![0xdd, 0x86, 0x05]);
+        cpu.registers.a = 0x11;
+        cpu.registers.ix = 0x1000;
+        bus.memory_write(0x1005, 0x22);
+        cpu.step(&mut bus, 0);
+        assert_eq!(0x33, cpu.registers.a);
+        assert_eq!(5, bus.m_cycles);
+        assert_eq!(19, bus.t_states);
+    }
+
+    #[test]
     fn test_jr() {
         let (mut cpu, mut bus) = new_cpu(vec![0x18]);
         cpu.step(&mut bus, 0);
@@ -123,17 +167,6 @@ mod test_z80 {
     }
 
 
-     #[test]
-    fn test_add_a_ix() {
-        let (mut cpu, mut bus) = new_cpu(vec![0xdd, 0x86, 0x05]);
-        cpu.registers.a = 0x11;
-        cpu.registers.ix = 0x1000;
-        bus.memory_write(0x1005, 0x22);
-        cpu.step(&mut bus, 0);
-        assert_eq!(0x33, cpu.registers.a);
-        assert_eq!(5, bus.m_cycles);
-        assert_eq!(19, bus.t_states);
-    }
      #[test]
     fn test_nop() {
         let (mut cpu, mut bus) = new_cpu(vec![0x00]);

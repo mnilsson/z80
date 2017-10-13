@@ -5,10 +5,6 @@ use bus::Bus;
 use util::make_u16;
 use times;
 
-use disassembler::Disassembler;
-use instruction::{Arg8, Arg16, IntoAddress, IntoArg16};
-use cpu::IntoArg8;
-
 use std::fmt;
 
 impl fmt::Display for Registers {
@@ -200,11 +196,7 @@ impl Registers {
 
 }
 
-impl IntoArg8 for Reg8 {
-    fn into_arg8(self, _disassembler: & Disassembler) -> Arg8 {
-        Arg8::Register(self)
-    }
-}
+
 
 impl Read8 for Reg8 {
     fn read8<B: Bus>(self, cpu: &mut Z80, _: &mut B) -> u8 {
@@ -324,11 +316,7 @@ impl Read8 for ImmByte {
         cpu.read_u8(bus)
     }
 }
-impl IntoArg8 for ImmByte {
-     fn into_arg8(self, disassembler: & Disassembler) -> Arg8 {
-        Arg8::Immediate(Data8(disassembler.next_byte()))
-    }
-}
+
 
 impl Read16 for ImmWord {
     fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
@@ -436,13 +424,7 @@ impl Read8 for Mem<Reg16> {
         bus.memory_read(addr as usize)
     }
 }
-use instruction::Address;
-impl IntoArg8 for Mem<Reg16> {
-    fn into_arg8(self, disassembler: &Disassembler) -> Arg8 {
-        let Mem(reg) = self;
-        Arg8::Memory(reg.into_address(disassembler))
-    }
-}
+
 //
 impl Read16 for RelOffset<u16> {
     fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
@@ -519,151 +501,5 @@ impl Read8 for Mem<u16> {
         let addr = val.read16(cpu, bus);
         bus.tick(1, times::MR);
         bus.memory_read(addr as usize)
-    }
-}
-
-
-use instruction::{Data8, Data16};
-impl IntoArg8 for Mem<u16> {
-    fn into_arg8(self, _disassembler: &Disassembler) -> Arg8 {
-        let Mem(addr) = self;
-        Arg8::Memory(Address::Direct(Data16(addr)))
-    }
-}
-
-impl IntoArg8 for Mem<ImmWord> {
-    fn into_arg8(self, disassembler: &Disassembler) -> Arg8 {
-        let addr = disassembler.next_word();
-        Arg8::Memory(Address::Direct(Data16(addr)))
-    }
-}
-
-impl IntoArg8 for Mem<RelOffset<Reg16>> {
-    fn into_arg8(self, _disassembler: &Disassembler) -> Arg8 {
-        let address = Address::BC; // @todo not correct
-        Arg8::Memory(address)
-    }
-}
-
-impl IntoArg8 for Mem<RelOffset<u16>> {
-    fn into_arg8(self, disassembler: &Disassembler) -> Arg8 {
-        let Mem(RelOffset(addr)) = self;
-        let offset = disassembler.next_byte();
-        let address = Address::RelOffset(Data16(addr), Data8(offset)); // @todo not correct
-        Arg8::Memory(address)
-    }
-}
-
-
-
-impl IntoAddress for Reg16 {
-    fn into_address(self, _disassembler: &Disassembler) -> Address {
-        match self {
-            Reg16::BC => Address::BC,
-            Reg16::DE => Address::DE,
-            Reg16::HL => Address::HL,
-            _ => panic!("invalid address register: {:?}", self)
-        }
-    }
-}
-
-impl IntoAddress for u16 {
-    fn into_address(self, _disassembler: &Disassembler) -> Address {
-        Address::Direct(Data16(self))
-    }
-}
-
-impl IntoAddress for ImmWord {
-    fn into_address(self, disassembler: &Disassembler) -> Address {
-        Address::Direct(Data16(disassembler.next_word()))
-        
-    }
-}
-
-impl IntoAddress for Mem<ImmWord> {
-    fn into_address(self, _disassembler: &Disassembler) -> Address {
-        panic!("should not be called, i think")
-        // Address::Direct(Data16(disassembler.next_word()))
-    }
-}
-
-impl IntoAddress for Mem<Reg16> {
-    fn into_address(self, _disassembler: &Disassembler) -> Address {
-        panic!("should not be called, i think")
-        // let Mem(reg) = self;
-        // reg.into_address(disassembler)
-    }
-}
-
-impl IntoAddress for Mem<RelOffset<Reg16>> {
-    fn into_address(self, _disassembler: &Disassembler) -> Address {
-        panic!("should not be called, i think")
-        // let Mem(RelOffset(reg)) = self;
-        // let offset = disassembler.next_byte();
-        // let address = Address::RelOffset(Data16(addr), Data8(offset)); // @todo not correct
-        // Arg8::Memory(address)
-    }
-}
-
-impl IntoAddress for RelOffset<Reg16> {
-    fn into_address(self, disassembler: &Disassembler) -> Address {
-        let RelOffset(_reg) = self;
-        let offset = disassembler.next_byte();
-        Address::RelOffset(Data16(1), Data8(offset)) // @todo not correct, should show reg
-    }
-}
-
-
-
-impl IntoAddress for RelOffset<u16> {
-    fn into_address(self, disassembler: &Disassembler) -> Address {
-        let RelOffset(addr) = self;
-        let offset = disassembler.next_byte();
-        Address::RelOffset(Data16(addr), Data8(offset)) // @todo not correct, should show reg
-    }
-}
-
-
-impl IntoArg16 for u16 {
-    fn into_arg16(self, _disassembler: &Disassembler) -> Arg16 {
-        // should probably not be called
-        Arg16::Immediate(Data16(self))
-    }
-}
-
-impl IntoArg16 for Reg16 {
-    fn into_arg16(self, _disassembler: &Disassembler) -> Arg16 {
-        Arg16::Register(self)
-    }
-}
-
-impl IntoArg16 for ImmWord {
-    fn into_arg16(self, disassembler: &Disassembler) -> Arg16 {
-        Arg16::Immediate(Data16(disassembler.next_word()))
-    }
-}
-
-impl IntoArg16 for Mem<ImmWord> {
-    fn into_arg16(self, disassembler: &Disassembler) -> Arg16 {
-        Arg16::Memory(Address::Direct(Data16(disassembler.next_word())))
-    }
-}
-
-impl IntoArg16 for Mem<Reg16> {
-    fn into_arg16(self, disassembler: &Disassembler) -> Arg16 {
-        let Mem(reg) = self;
-        Arg16::Memory(reg.into_address(disassembler))
-    }
-}
-
-impl IntoArg16 for RelOffset<Reg16> {
-    fn into_arg16(self, _disassembler: &Disassembler) -> Arg16 {
-        panic!("nope")
-    }
-}
-
-impl IntoArg16 for RelOffset<u16> {
-    fn into_arg16(self, _disassembler: &Disassembler) -> Arg16 {
-        panic!("nope")
     }
 }

@@ -1,19 +1,9 @@
 use std::fmt;
 
-use disassembler::Disassembler;
 
 
-pub trait IntoAddress {
-    fn into_address(self, disassembler: &Disassembler) -> Address;
-}
 
-pub trait IntoArg16 {
-    fn into_arg16(self, disassembler: &Disassembler) -> Arg16;
-}
 
-pub trait IntoCond {
-    fn into_cond(self, disassembler: &Disassembler) -> Cond;
-}
 
 
 
@@ -163,6 +153,7 @@ pub enum Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
+            Instruction::ADD8(ref d, ref s) => write!(f, "add {},{}", d, s),
             Instruction::ADD16(ref d, ref s) => write!(f, "add {},{}", d, s),
             Instruction::AND(ref val) => write!(f, "and {}", val),
             Instruction::CP(ref val) => write!(f, "cp {}", val),
@@ -184,6 +175,7 @@ impl fmt::Display for Instruction {
             Instruction::POP(ref val) => write!(f, "pop {}", val),
             Instruction::PUSH(ref val) => write!(f, "push {}", val),
             Instruction::RET => write!(f, "ret"),
+            Instruction::RST(byte) => write!(f, "rst {:02x}", byte),
             Instruction::RLCA => write!(f, "rlca"),
             _ => write!(f, ""),
         }

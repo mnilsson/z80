@@ -1,4 +1,7 @@
 //
+pub mod instruction;
+pub mod traits;
+
 use bus::Bus;
 pub struct Disassembler {
     pub bus: Box<Bus>,
@@ -21,7 +24,7 @@ use cpu::{Write8, Write16, Read8, Read16, Source, ReadCond};
 use operations::Ops;
 use registers::Reg16;
 use registers::ReadAddress;
-use instruction::Instruction;
+use self::instruction::Instruction;
 
 #[allow(unused)]
 impl<'a> Ops for &'a Disassembler {
@@ -177,7 +180,7 @@ impl<'a> Ops for &'a Disassembler {
     }
     
 
-    fn rst(self, byte: u8) -> Self::R{         Instruction::NOP     }
+    fn rst(self, byte: u8) -> Self::R { Instruction::RST(byte) }
 
     fn srl<S: Read8 + Write8 + Copy>(self, source: S) -> Self::R{         Instruction::NOP     }
     fn sll<S: Read8 + Write8 + Copy>(self, source: S) -> Self::R{         Instruction::NOP     }
