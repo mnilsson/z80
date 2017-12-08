@@ -20,11 +20,13 @@ impl Disassembler {
     }
 }
 
-use cpu::{Write8, Write16, Read8, Read16, Source, ReadCond};
+use cpu::{Write8, Write16, Read8, Read16, Source, ReadCond, ImmByte, RelOffset};
 use operations::Ops;
+use operations::{decode_cb, decode_dd, decode_ed, decode_fd, decode_dd_fd_cb};
 use registers::Reg16;
 use registers::ReadAddress;
 use self::instruction::Instruction;
+use self::traits::IntoArg8;
 
 #[allow(unused)]
 impl<'a> Ops for &'a Disassembler {
@@ -33,9 +35,11 @@ impl<'a> Ops for &'a Disassembler {
         Instruction::AND(reg.into_arg8(self))
     }
     fn add8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) -> Self::R {
-        Instruction::NOP
+        Instruction::ADD8(dest.into_arg8(self), source.into_arg8(self))
     }
-    fn adc8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) -> Self::R{         Instruction::NOP     }
+    fn adc8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) -> Self::R {
+        Instruction::ADC8(dest.into_arg8(self), source.into_arg8(self))
+    }
     fn add16<D: Write16 + Read16 + Copy, S: Read16>(self, dest: D, source: S) -> Self::R{
         Instruction::ADD16(dest.into_arg16(self), source.into_arg16(self))
     }
@@ -73,6 +77,7 @@ impl<'a> Ops for &'a Disassembler {
     fn halt(self) -> Self::R{         Instruction::NOP     }
 
     fn in8<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R{         Instruction::NOP     }
+    fn in8_noflags<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R{         Instruction::NOP     }
 
     fn inc8<R: Write8 + Read8 + Copy>(self, reg: R) -> Self::R{         Instruction::NOP     }
     fn inc8_memory<R: ReadAddress>(self, reg: R) -> Self::R{         Instruction::NOP     }
@@ -90,11 +95,10 @@ impl<'a> Ops for &'a Disassembler {
         // Instruction::NOP
     }
 
-    fn jr<C: Source<bool>>(self, condition: C) -> Self::R{
-                 Instruction::NOP     
-        // Instruction::JR()
+    fn jr<C: ReadCond>(self, condition: C) -> Self::R{
+        Instruction::JR_COND(condition.into_cond(self), self.next_byte())
     }
-    fn djnz(self) -> Self::R{         Instruction::NOP     }
+    fn djnz(self) -> Self::R{ Instruction::DJNZ(ImmByte.into_arg8(self)) }
     fn ret(self) -> Self::R {
         Instruction::RET    
     }
@@ -122,6 +126,11 @@ impl<'a> Ops for &'a Disassembler {
         // Instruction::NOP
     }
 
+    fn out8_noflags<D: Read8, S: Read8>(self, dest: D, source: S) -> Self::R {
+        Instruction::OUT(dest.into_arg8(self), source.into_arg8(self))
+        // Instruction::NOP
+    }
+
     fn or<R: Read8>(self, reg: R) -> Self::R {
         Instruction::OR(reg.into_arg8(self))
     }
@@ -132,7 +141,7 @@ impl<'a> Ops for &'a Disassembler {
     fn rrca(self) -> Self::R{         Instruction::NOP     }
     fn scf(self) -> Self::R{         Instruction::NOP     }
 
-    fn xor<R: Read8>(self, reg: R) -> Self::R{         Instruction::NOP     }
+    fn xor<R: Read8>(self, reg: R) -> Self::R { Instruction::XOR(reg.into_arg8(self)) }
 
     fn sub8<S: Read8>(self, source: S) -> Self::R{         Instruction::NOP     }
     fn sbc8<S: Read8>(self, source: S) -> Self::R{         Instruction::NOP     }
@@ -194,10 +203,16 @@ impl<'a> Ops for &'a Disassembler {
     fn rr<S: Read8 + Write8 + Copy>(self, source: S) -> Self::R{         Instruction::NOP     }
     fn set<S: Read8 + Write8 + Copy>(self, bit: u8, source: S) -> Self::R{         Instruction::NOP     }
 
-    fn cb_op(self) -> Self::R{         Instruction::NOP     }
+    fn cb_op(self) -> Self::R {         Instruction::NOP     }
     
-    fn dd_op(self) -> Self::R{         Instruction::NOP     }
-    fn ed_op(self) -> Self::R{         Instruction::NOP     }
-    fn fd_op(self) -> Self::R{         Instruction::NOP     }
-    fn dd_fd_cb_op(self, ireg: Reg16) -> Self::R{         Instruction::NOP     }
+    fn dd_op(self) -> Self::R{     decode_dd(self, self.next_byte()) }
+    fn ed_op(self) -> Self::R{         decode_ed(self, self.next_byte())  }
+    fn fd_op(self) -> Self::R{         decode_fd(self, self.next_byte()) }
+    fn dd_fd_cb_op(self, _: Reg16) -> Self::R {
+
+        let _ = self.next_byte();
+        let op = self.next_byte();
+
+        decode_dd_fd_cb(self, 0, op)
+    }
 }

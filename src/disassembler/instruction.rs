@@ -118,6 +118,7 @@ pub enum Prefix {
 #[allow(non_camel_case_types)]
 pub enum Instruction {
     ADD8(Arg8, Arg8),
+    ADC8(Arg8, Arg8),
     ADD16(Arg16, Arg16),
     AND(Arg8),
     CP(Arg8),
@@ -125,7 +126,7 @@ pub enum Instruction {
     CALL_COND(Cond, Address),
     DEC16(Arg16),
     DI,
-    DJNZ,
+    DJNZ(Arg8),
     EX(Arg16, Arg16),
     HALT,
     IN,
@@ -134,6 +135,7 @@ pub enum Instruction {
     JP(Address),
     JP_COND(Cond, Address),
     JR(Address),
+    JR_COND(Cond, u8),
     LD8(Arg8, Arg8),
     LD16(Arg16, Arg16),
     LDIR,
@@ -148,12 +150,14 @@ pub enum Instruction {
     RRA,
     RRCA,
     RST(u8),
+    XOR(Arg8),
 }
 
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Instruction::ADD8(ref d, ref s) => write!(f, "add {},{}", d, s),
+            Instruction::ADC8(ref d, ref s) => write!(f, "adc {},{}", d, s),
             Instruction::ADD16(ref d, ref s) => write!(f, "add {},{}", d, s),
             Instruction::AND(ref val) => write!(f, "and {}", val),
             Instruction::CP(ref val) => write!(f, "cp {}", val),
@@ -161,11 +165,13 @@ impl fmt::Display for Instruction {
             Instruction::CALL_COND(ref cond, ref addr) => write!(f, "call {},{}", cond, addr),
             
             Instruction::DEC16(ref reg) => write!(f, "dec {}", reg),
+            
+            Instruction::DJNZ(ref val) => write!(f, "djnz {}", val),
             Instruction::EX(ref a, ref b) => write!(f, "ex {},{}", a, b),
             Instruction::INC16(ref reg) => write!(f, "inc {}", reg),
             Instruction::JP(ref addr) => write!(f, "jp {}", addr),
             Instruction::JP_COND(ref cond, ref addr) => write!(f, "jp {},{}", cond, addr),
-            Instruction::JR(ref addr) => write!(f, "jr {}", addr),
+            Instruction::JR_COND(ref cond, addr) => write!(f, "jr {},{}", cond, addr as i8),
             Instruction::LD8(ref d, ref s) => write!(f, "ld {},{}", d, s),
             Instruction::LD16(ref d, ref s) => write!(f, "ld {},{}", d, s),
             Instruction::LDIR => write!(f, "ldir"),
@@ -177,6 +183,7 @@ impl fmt::Display for Instruction {
             Instruction::RET => write!(f, "ret"),
             Instruction::RST(byte) => write!(f, "rst {:02x}", byte),
             Instruction::RLCA => write!(f, "rlca"),
+            Instruction::XOR(ref reg) => write!(f, "xor {}", reg),
             _ => write!(f, ""),
         }
     }

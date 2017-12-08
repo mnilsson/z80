@@ -46,6 +46,7 @@ pub trait Ops {
     fn halt(self) -> Self::R;
 
     fn in8<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R;
+    fn in8_noflags<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R;
 
     fn inc8<R: Write8 + Read8 + Copy>(self, reg: R) -> Self::R;
     fn inc8_memory<R: ReadAddress>(self, reg: R) -> Self::R;
@@ -56,7 +57,7 @@ pub trait Ops {
 
     fn jp_cond<C: ReadCond, A: Read16>(self, condition: C, addr: A) -> Self::R;
 
-    fn jr<C: Source<bool>>(self, condition: C) -> Self::R;
+    fn jr<C: ReadCond>(self, condition: C) -> Self::R;
     fn djnz(self) -> Self::R;
     fn ret(self) -> Self::R;
     fn ret_cond<C: Source<bool>>(self, condition: C) -> Self::R;
@@ -67,6 +68,7 @@ pub trait Ops {
 
     fn nop(self) -> Self::R;
     fn out8<D: Read8, S: Read8>(self, dest: D, source: S) -> Self::R;
+    fn out8_noflags<D: Read8, S: Read8>(self, dest: D, source: S) -> Self::R;
 
     fn or<R: Read8>(self, reg: R) -> Self::R;
 
@@ -142,6 +144,7 @@ pub trait Ops {
 
 
 pub fn decode<O: Ops>(ops: O, op: u8) -> O::R {
+    
     match op {
         0x00 => ops.nop(),
         0x01 => ops.ld16(BC, ImmWord),
@@ -380,7 +383,7 @@ pub fn decode<O: Ops>(ops: O, op: u8) -> O::R {
         0xd0 => ops.ret_cond(Not(Carry)),
         0xd1 => ops.pop(DE), 
         0xd2 => ops.jp_cond(Not(Carry), ImmWord),
-        0xd3 => ops.out8(ImmByte, A),
+        0xd3 => ops.out8_noflags(ImmByte, A),
         0xd4 => ops.call_cond(Not(Carry), ImmWord),
         0xd5 => ops.push(DE),
         0xd6 => ops.sub8(ImmByte),
@@ -388,7 +391,7 @@ pub fn decode<O: Ops>(ops: O, op: u8) -> O::R {
         0xd8 => ops.ret_cond(Carry),
         0xd9 => ops.exx(),
         0xda => ops.jp_cond(Carry, ImmWord),
-        0xdb => ops.in8(A, ImmByte),
+        0xdb => ops.in8_noflags(A, ImmByte),
         0xdc => ops.call_cond(Carry, ImmWord),
         0xdd => ops.dd_op(),
         0xde => ops.sbc8(ImmByte),
@@ -433,14 +436,17 @@ pub fn decode<O: Ops>(ops: O, op: u8) -> O::R {
 
 
 pub fn decode_dd<O: Ops>(ops: O, op: u8) -> O::R {
+
     decode_fd_dd(ops, IX, op)
 }
 
 pub fn decode_fd<O: Ops>(ops: O, op: u8) -> O::R {
+
     decode_fd_dd(ops, IY, op)
 }
 
 fn decode_fd_dd<O: Ops>(ops: O, ireg: Reg16, op: u8) -> O::R {
+    
     let (iregh, iregl) = match ireg {
         IY => (IYH, IYL),
         IX => (IXH, IXL),
@@ -588,6 +594,9 @@ pub fn decode_dd_fd_cb<O: Ops>(ops: O, address: u16, op: u8) -> O::R {
 }
 
 pub fn decode_ed<O: Ops>(ops: O, op: u8) -> O::R {
+    if op != 0x4d && op != 0xb0 {
+        // println!(" {:02x}", op);
+    }
     match op {
         0x40 => ops.in8(B, C),
         0x41 => ops.out8(C, B),
@@ -675,7 +684,7 @@ pub fn decode_ed<O: Ops>(ops: O, op: u8) -> O::R {
         0xb9 => ops.cpdr(),
         0xba => ops.indr(),
         0xbb => ops.otdr(),
-        _ => unreachable!("no!"),
+        _ => unreachable!("no! {:02x}", op),
     }
 }
 

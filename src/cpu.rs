@@ -81,6 +81,12 @@ impl Source<bool> for Flag {
      }
 }
 
+impl ReadCond for bool {
+    fn read_cond(self, _cpu: &mut Z80) -> bool {
+        self
+    }
+}
+
 impl ReadCond for Flag {
     fn read_cond(self, cpu: &mut Z80) -> bool {
         cpu.registers.get_flag(self)
@@ -164,7 +170,7 @@ impl Z80 {
 
             nmi: false,
 
-            debug: false,
+            debug: true,
             sp: 0xdff0,
             pc: 0,
 
@@ -177,6 +183,7 @@ impl Z80 {
     pub fn step<B: Bus>(&mut self, bus: &mut B, int_flags: u8) -> u32 {
         self.handle_interrupt(bus, int_flags);
         self.execute_next_instruction(bus);
+
         0
     }
 
@@ -202,6 +209,7 @@ impl Z80 {
 
 
     fn handle_interrupt<B: Bus>(&mut self, bus: &mut B, int_flags: u8) {
+    
         if self.iff1 == 0 || self.ei_instr {
             return;
         }
@@ -209,7 +217,7 @@ impl Z80 {
         if int_flags != 0 && self.iff1 > 0 && self.interrupt_mode == 1 {
             self.halted = false;
             let pc = self.pc;
-            self.push_word(bus,pc);
+            self.push_word(bus, pc);
             if self.iff1 == 2 {
                 let i = Reg8::I.read8(self, bus);
                 let addr = (i as u16) << 8;
@@ -227,10 +235,11 @@ impl Z80 {
 
         self.ei_instr = false;
 
-        let instr = if !self.halted { self.read_instruction(bus) } else { 0 };
+        let instr = if !self.halted { self.read_instruction(bus) } else { bus.tick(1, times::OCF); 0 };
+
 
         ops::decode((self, bus), instr);
-        
+
         instr
                 
             
@@ -243,7 +252,7 @@ impl Z80 {
         self.registers.set_flag(Sign, bit == 7 && res != 0);
         self.registers.set_flag(HalfCarry, true);
         self.registers.set_flag(Subtract, false);
-        self.registers.set_xy(res);
+        // self.registers.set_xy(res);
     }
 
     fn exx<B: Bus>(&mut self, bus: &mut B) {
@@ -272,8 +281,11 @@ impl Z80 {
     }
 
     fn outi<B: Bus>(&mut self, bus: &mut B) {
+        bus.tick(0, 1); // ocf 2 takes 5 tstates
         let hl = Reg16::HL.read16(self, bus);
         let io_val = bus.memory_read(hl as usize);
+        bus.tick(1, times::MR);
+
         self.inc16(bus, Reg16::HL);
         let b = Reg8::B.read8(self, bus);
         Reg8::B.write8(self, bus, b.wrapping_sub(1));
@@ -287,6 +299,8 @@ impl Z80 {
         let carry = l as u16 + b as u16 > 255;
         self.registers.set_flag(Carry, carry);
         self.registers.set_flag(HalfCarry, carry);
+        // bus.tick(0, 1);
+        // bus.tick(1, times::MR);
 
     }
 
@@ -300,6 +314,7 @@ impl Z80 {
     }
 
     fn call_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) -> u8 {
+        bus.tick(0, 1);
         let cond = cond.read(self, bus);
         if cond {
             self.call(bus, ImmWord);
@@ -318,12 +333,14 @@ impl Z80 {
     }
 
     pub fn ret< B: Bus>(&mut self, bus: &mut B){
-        self.pc = self.pop_word(bus);
+        // self.pc = self.pop_word(bus);
+        self.ret_cond(bus, true);
     }
 
     fn write_port<P: Read8, V: Read8, B: Bus>(&mut self, bus: &mut B, port: P, val: V) {
         let port = port.read8(self, bus);
         let val = val.read8(self, bus);
+        // println!("out {:x},{:x}", port, val);
         bus.port_write(port, val);
         bus.tick(1, times::PW);
     }
@@ -338,6 +355,7 @@ impl Z80 {
         self.registers.set_flag(HalfCarry, false);
         self.registers.set_flag(Parity, val.count_ones() % 2 == 0);
         self.registers.set_flag(Subtract, false);
+        // println!("in {:x},{:x}", port, val);
     }
 
     pub fn read_instruction<B: Bus>(&mut self, bus: &mut B) -> u8 {
@@ -729,6 +747,15 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         cpu.read_port(bus, dest, source)
     }
 
+    fn in8_noflags<D: Write8, S: Read8>(self, dest: D, source: S) {
+        let (cpu, bus) = self;
+        
+
+        let addr = cpu.read_u8(bus) as u16 | ((Reg8::A.read8(cpu, bus) as u16) << 8);
+        let port_val = bus.port_read(addr as u8);
+        Reg8::A.write8(cpu, bus, port_val);
+    }
+
     fn inc8<R: Write8 + Read8 + Copy>(self, reg: R) {
         let (cpu, bus) = self;
         ops::inc_u8(cpu, bus, reg);
@@ -776,10 +803,10 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     }
 
 
-    fn jr<C: Source<bool>>(self, condition: C) {
+    fn jr<C: ReadCond>(self, condition: C) {
         let (cpu, bus) = self;
         
-        let cond = condition.read(cpu, bus);
+        let cond = condition.read_cond(cpu);
         let temp = cpu.read_u8(bus) as i8 as i32;
 
         if cond {
@@ -797,7 +824,10 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
         if b != 0 {
             (cpu, bus).jr(true);
+        } else {
+            cpu.pc += 1; // @todo Not nice!!!
         }
+
     }
 
     fn ret_cond<C: Source<bool>>(self, condition: C) {
@@ -824,16 +854,24 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     fn out8<D: Read8, S: Read8>(self, dest: D, source: S) {
         let (cpu, bus) = self;
-
         cpu.write_port(bus, dest, source)
+    }
+
+
+    fn out8_noflags<D: Read8, S: Read8>(self, dest: D, source: S) {
+        let (cpu, bus) = self;
+        let port = cpu.read_u8(bus);
+        let a = Reg8::A.read8(cpu, bus);
+        bus.port_write(port, a);
     }
 
     fn outi(self) {
         let (cpu, bus) = self;
-
+        bus.tick(0, 1); // ocf #2 takes 5 tstates for outi
 
         let hl = Reg16::HL.read16(cpu, bus);
         let byte = bus.memory_read(hl as usize);
+        bus.tick(1, times::MR);
         cpu.write_port(bus, Reg8::C, byte);
 
         ops::dec_u8(cpu, bus, Reg8::B);
@@ -978,7 +1016,9 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         cpu.registers.set_flag(Subtract, byte & 0x80 == 0x80);
     }
     fn ini(self) {
+
         let (cpu, bus) = self;
+
 
         let bc = Reg16::BC.read16(cpu, bus);
         let hl = Reg16::HL.read16(cpu, bus);
@@ -1073,12 +1113,14 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     fn dd_op(self) {
         let (cpu, bus) = self;
         let op = cpu.read_instruction(bus);
+        
         ops::decode_dd((cpu, bus), op);
     }
 
     fn ed_op(self) {
         let (cpu, bus) = self;
         let op = cpu.read_instruction(bus);
+
         ops::decode_ed((cpu, bus), op);
     }
 
@@ -1092,6 +1134,10 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let (cpu, bus) = self;
         let address = RelOffset(ireg).read16(cpu, bus);
         let op = cpu.read_instruction(bus);
+        // let op = bus.memory_read(cpu.pc as usize);
+        // cpu.pc += 1;
+        // bus.tick(0, times::OCF);
+
         ops::decode_dd_fd_cb((cpu, bus), address, op)
     }
 
