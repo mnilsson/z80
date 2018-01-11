@@ -55,6 +55,9 @@ pub enum Cond {
     NotCarry,
     Positive,
     Negative,
+
+    True,
+    False,
 }
 
 impl fmt::Display for Cond {
@@ -67,6 +70,7 @@ impl fmt::Display for Cond {
             &Cond::NotCarry => write!(f, "nc"),
             &Cond::Positive => write!(f, "p"),
             &Cond::Negative => write!(f, "m"),
+            _ => write!(f, ""),
         }
     }
 }
@@ -124,6 +128,7 @@ pub enum Instruction {
     CP(Arg8),
     CALL(Address),
     CALL_COND(Cond, Address),
+    DEC8(Arg8),
     DEC16(Arg16),
     DI,
     DJNZ(Arg8),
@@ -145,6 +150,7 @@ pub enum Instruction {
     POP(Arg16),
     PUSH(Arg16),
     RET,
+    RET_COND(Cond),
     RLA,
     RLCA,
     RRA,
@@ -164,8 +170,9 @@ impl fmt::Display for Instruction {
             Instruction::CALL(ref addr) => write!(f, "call {}", addr),
             Instruction::CALL_COND(ref cond, ref addr) => write!(f, "call {},{}", cond, addr),
             
+            Instruction::DEC8(ref reg) => write!(f, "dec {}", reg),
             Instruction::DEC16(ref reg) => write!(f, "dec {}", reg),
-            
+
             Instruction::DJNZ(ref val) => write!(f, "djnz {}", val),
             Instruction::EX(ref a, ref b) => write!(f, "ex {},{}", a, b),
             Instruction::INC16(ref reg) => write!(f, "inc {}", reg),
@@ -181,8 +188,10 @@ impl fmt::Display for Instruction {
             Instruction::POP(ref val) => write!(f, "pop {}", val),
             Instruction::PUSH(ref val) => write!(f, "push {}", val),
             Instruction::RET => write!(f, "ret"),
+            Instruction::RET_COND(ref cond) => write!(f, "ret {}", cond),
             Instruction::RST(byte) => write!(f, "rst {:02x}", byte),
             Instruction::RLCA => write!(f, "rlca"),
+            Instruction::RRCA => write!(f, "rrca"),
             Instruction::XOR(ref reg) => write!(f, "xor {}", reg),
             _ => write!(f, ""),
         }

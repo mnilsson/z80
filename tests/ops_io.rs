@@ -1,7 +1,8 @@
+#![allow(cast_lossless)]
 extern crate z80;
 
 #[cfg(test)]
-mod test_z80 {
+mod test_io {
     //    use z80::registers::Reg16;
     use z80::cpu::Z80;
     use z80::bus::Bus;
@@ -11,6 +12,7 @@ mod test_z80 {
 
     struct TestBus {
         memory: Vec<u8>,
+        pub port_data: Vec<u8>,
         pub m_cycles: u8,
         pub t_states: u8,
     }
@@ -21,6 +23,7 @@ mod test_z80 {
                 memory: prg,
                 m_cycles: 0,
                 t_states: 0,
+                port_data: vec![0; 0xff],
             }
         }
     }
@@ -44,7 +47,10 @@ mod test_z80 {
         }
 
         #[allow(unused_variables)]
-        fn port_write(&mut self, port: u8, byte: u8) {}
+        fn port_write(&mut self, port: u8, byte: u8) {
+
+            self.port_data[port as usize] = byte;
+        }
 
         #[allow(unused_variables)]
         fn port_read(&mut self, port: u8) -> u8 {
@@ -68,61 +74,54 @@ mod test_z80 {
     }
 
     #[test]
-    fn test_jp_hl() {
+    fn test_out_n_a () {
         let (mut cpu, mut bus) = new_cpu(vec![
-            0xe9
+            0xd3, 0x01
         ]);
 
-        cpu.registers.l = 0xff;
+        cpu.registers.a = 0x23;
         cpu.step(&mut bus, 0);
-        assert_eq!(0xff, cpu.pc);
-        assert_eq!(1, bus.m_cycles);
-        assert_eq!(4, bus.t_states);
-    }
-    #[test]
-    fn test_jp_nn() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xc3, 0xff, 0x00
-        ]);
-
-
-        cpu.step(&mut bus, 0);
-        assert_eq!(0xff, cpu.pc);
-        assert_eq!(3, bus.m_cycles);
-        assert_eq!(10, bus.t_states);
-    }
-
-    #[test]
-    fn call_returns_to_correct_place() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xcd, 0xff, 0x00
-        ]);
-
-        cpu.sp = 0x2000;
-        bus.memory_write_word(0x00ff, 0xc9);
-        cpu.step(&mut bus, 0);
-        assert_eq!(0xff, cpu.pc);
-        assert_eq!(5, bus.m_cycles);
-        assert_eq!(17, bus.t_states); 
-        cpu.step(&mut bus, 0);
-        assert_eq!(0x03, cpu.pc);
-        assert_eq!(0x2000, cpu.sp);
-    }
-
-
-    #[test]
-    fn test_rst() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xff,
-        ]);
-
-        cpu.sp = 0x2000;
-
-        cpu.step(&mut bus, 0);
-        assert_eq!(0x38, cpu.pc);
         // assert_eq!(3, bus.m_cycles);
-        // assert_eq!(11, bus.t_states); 
-        let val = bus.memory_read_word(0x1ffe);
-        assert_eq!(0x01, val);
+        // assert_eq!(11, bus.t_states);
+        assert_eq!(0x23, bus.port_data[0x01]);
+    }
+
+    #[test]
+    fn test_out_c_r () {
+        let (mut cpu, mut bus) = new_cpu(vec![
+            0xed, 0x51
+        ]);
+
+        cpu.registers.c = 0x01;
+        cpu.registers.d = 0x5a;
+        
+        cpu.step(&mut bus, 0);
+        assert_eq!(3, bus.m_cycles);
+        assert_eq!(12, bus.t_states);
+        assert_eq!(0x5a, bus.port_data[0x01]);
+    }
+
+    #[test]
+    fn test_outi () {
+        let (mut cpu, mut bus) = new_cpu(vec![
+            0xed, 0xa3
+        ]);
+
+        cpu.registers.b = 0x10;
+        cpu.registers.c = 0x07;
+        cpu.registers.d = 0x5a;
+        cpu.registers.h = 0x10;
+        cpu.registers.l = 0x00;
+
+        bus.memory_write(0x1000, 0x59);
+        
+        cpu.step(&mut bus, 0);
+        assert_eq!(0x0f, cpu.registers.b);
+        assert_eq!(0x10, cpu.registers.h);
+        assert_eq!(0x01, cpu.registers.l);
+        assert_eq!(0x59, bus.port_data[0x07]);
+        assert_eq!(4, bus.m_cycles);
+        assert_eq!(16, bus.t_states);
+        
     }
 }

@@ -3,13 +3,10 @@ extern crate z80;
 #[cfg(test)]
 mod test_z80 {
 
-//    use z80::registers::Reg16;
     use z80::cpu::Z80;
     use z80::bus::Bus;
-    use z80::cpu::Source;
     use z80::cpu::*;
-    use z80::flags::Flag;
-    use z80::registers::{Reg16, Reg8};
+    use z80::registers::Reg16;
 
 
     struct TestBus {
@@ -67,7 +64,7 @@ mod test_z80 {
     fn new_cpu(mut prg: Vec<u8>) -> (Z80, TestBus) {
 
         prg.resize(0xff00, 0);
-        let mut bus = TestBus::new(
+        let bus = TestBus::new(
             prg
         );
         (Z80::new(), bus)
@@ -80,7 +77,7 @@ mod test_z80 {
    const SIGN: u8 =        0b1000_0000;//1 << 7;
 
     const XYMASK: u8 = 0b1101_0111;
-   fn new_bus_and_cpu_with_prg(mut prg: Vec<u8>) -> (Z80, TestBus) {
+   fn new_bus_and_cpu_with_prg(prg: Vec<u8>) -> (Z80, TestBus) {
        new_cpu(prg)
    }
 
@@ -349,6 +346,31 @@ mod test_z80 {
        cpu.execute_next_instruction(&mut bus);
        assert_eq!(0x90, cpu.registers.a);
        assert_eq!(SIGN | PARITY | SUBTRACT | CARRY, cpu.registers.f & XYMASK);
+   }
+   #[test]
+   fn test_push_pop() {
+       let (mut cpu, mut bus) = new_bus_and_cpu_with_prg(
+           vec![
+               0xf5,           // push af
+               0xc5,
+               0xc1,
+               0xf1,           // pop af
+               
+           ]
+       );
+
+       cpu.registers.a = 0x04;
+       cpu.registers.f = 0x08;
+
+       cpu.execute_next_instruction(&mut bus);
+       cpu.registers.a = 0x0;
+       cpu.registers.f = 0x0;
+       cpu.execute_next_instruction(&mut bus);
+       cpu.execute_next_instruction(&mut bus);
+
+       cpu.execute_next_instruction(&mut bus);
+       assert_eq!(0x08, cpu.registers.f);
+       assert_eq!(0x04, cpu.registers.a);
    }
 
    #[test]

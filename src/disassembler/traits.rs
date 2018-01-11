@@ -2,7 +2,7 @@ use disassembler::instruction::{Address, Data8, Data16, Cond, Arg8, Arg16};
 use disassembler::Disassembler;
 
 use registers::{Reg8, Reg16};
-use cpu::{Not, ImmByte, ImmWord, Mem, RelOffset, ReadCond};
+use cpu::{Not, ImmByte, ImmWord, Mem, RelOffset};
 use flags::Flag;
 
 pub trait IntoArg8 {
@@ -196,7 +196,10 @@ impl IntoArg8 for u8 {
 
 impl IntoCond for bool {
     fn into_cond(self, _disassembler: &Disassembler) -> Cond {
+
         match self {
+            true => Cond::True,
+            false => Cond::False,
             _ => unreachable!("invalid cond"),
         }
     }

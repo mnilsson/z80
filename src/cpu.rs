@@ -237,12 +237,8 @@ impl Z80 {
 
         let instr = if !self.halted { self.read_instruction(bus) } else { bus.tick(1, times::OCF); 0 };
 
-
         ops::decode((self, bus), instr);
-
         instr
-                
-            
     }
 
     fn test_bit(&mut self, bit: u8, val: u8) {
@@ -304,29 +300,25 @@ impl Z80 {
 
     }
 
-    fn jp_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) -> u8 {
+    fn jp_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) {
         let cond = cond.read(self, bus);
         let addr = self.read_u16(bus);
         if cond {
             self.pc = addr;
         }
-        10
     }
 
-    fn call_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) -> u8 {
+    fn call_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) {
         bus.tick(0, 1);
         let cond = cond.read(self, bus);
+        let addr = ImmWord.read16(self, bus);
         if cond {
-            self.call(bus, ImmWord);
-            17
-        } else {
-            self.pc += 2;
-            10
+            self.call(bus, addr);
         }
     }
 
-    fn ret_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) -> u8 {
-        if cond.read(self, bus) {
+    fn ret_cond<C: ReadCond, B: Bus>(&mut self, bus: &mut B, cond: C) -> u8 {
+        if cond.read_cond(self) {
             self.pc = self.pop_word(bus);
         }
         0
@@ -531,7 +523,7 @@ impl Z80 {
 
     fn rlca<B: Bus>(&mut self, bus: &mut B) {
         let val = Reg8::A.read8(self, bus);
-        let res = (val << 1 | val >> 7) & 0xff;
+        let res = val << 1 | val >> 7;
         self.registers.set_flag(Carry,val >> 7 == 1);
         self.registers.set_flag(Subtract,false);
         self.registers.set_flag(HalfCarry,false);
@@ -542,7 +534,7 @@ impl Z80 {
     fn rla<B: Bus>(&mut self, bus: &mut B) {
         let val = Reg8::A.read8(self, bus);
         let carry = if self.registers.get_flag(Carry) { 1 } else { 0 };
-        let res = (val << 1 | carry) & 0xff;
+        let res = val << 1 | carry;
         self.registers.set_flag(Carry, val >> 7 == 1);
         self.registers.set_flag(Subtract, false);
         self.registers.set_flag(HalfCarry, false);
@@ -747,7 +739,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         cpu.read_port(bus, dest, source)
     }
 
-    fn in8_noflags<D: Write8, S: Read8>(self, dest: D, source: S) {
+    fn in8_noflags<D: Write8, S: Read8>(self, _dest: D, _source: S) {
         let (cpu, bus) = self;
         
 
@@ -830,7 +822,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     }
 
-    fn ret_cond<C: Source<bool>>(self, condition: C) {
+    fn ret_cond<C: ReadCond>(self, condition: C) {
         let (cpu, bus) = self;
         bus.tick(0, 1); // @todo for some reason  ocf is 5 don't know why
         cpu.ret_cond(bus, condition);
@@ -858,7 +850,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     }
 
 
-    fn out8_noflags<D: Read8, S: Read8>(self, dest: D, source: S) {
+    fn out8_noflags<D: Read8, S: Read8>(self, _dest: D, _source: S) {
         let (cpu, bus) = self;
         let port = cpu.read_u8(bus);
         let a = Reg8::A.read8(cpu, bus);

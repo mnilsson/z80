@@ -60,7 +60,7 @@ pub trait Ops {
     fn jr<C: ReadCond>(self, condition: C) -> Self::R;
     fn djnz(self) -> Self::R;
     fn ret(self) -> Self::R;
-    fn ret_cond<C: Source<bool>>(self, condition: C) -> Self::R;
+    fn ret_cond<C: ReadCond>(self, condition: C) -> Self::R;
     fn ld8<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R;
     fn ld8_address_dest<D: ReadAddress, S: Read8>(self, dest: D, source: S) -> Self::R;
     fn ld8_address_source<D: Write8, S: ReadAddress>(self, dest: D, source: S) -> Self::R;

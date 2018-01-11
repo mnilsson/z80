@@ -108,6 +108,25 @@ mod test_z80 {
 
     }
 
+    #[test]
+    fn test_ld_r_mem_immword() {
+        let (mut cpu, mut bus) = new_cpu(vec![
+            0x3a,0x11, 0x00
+        ]);
+
+
+
+        bus.memory_write(0x0011, 0x1);
+        cpu.registers.a = 0;
+        
+
+        cpu.step(&mut bus, 0);
+        assert_eq!(0x1, cpu.registers.a);
+        // assert_eq!(7, bus.t_states);
+        // assert_eq!(2, bus.m_cycles);
+
+    }
+
 
     #[test]
     fn test_ld_r_immbyte() {

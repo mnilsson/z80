@@ -20,9 +20,9 @@ impl Disassembler {
     }
 }
 
-use cpu::{Write8, Write16, Read8, Read16, Source, ReadCond, ImmByte, RelOffset};
+use cpu::{Write8, Write16, Read8, Read16, Source, ReadCond, ImmByte};
 use operations::Ops;
-use operations::{decode_cb, decode_dd, decode_ed, decode_fd, decode_dd_fd_cb};
+use operations::{decode_dd, decode_ed, decode_fd, decode_dd_fd_cb};
 use registers::Reg16;
 use registers::ReadAddress;
 use self::instruction::Instruction;
@@ -58,7 +58,7 @@ impl<'a> Ops for &'a Disassembler {
     }
     fn cpl(self) -> Self::R{         Instruction::NOP     }
     fn daa(self) -> Self::R{         Instruction::NOP     }
-    fn dec8<R: Write8 + Read8 + Copy>(self, reg: R) -> Self::R{         Instruction::NOP     }
+    fn dec8<R: Write8 + Read8 + Copy>(self, reg: R) -> Self::R { Instruction::DEC8(reg.into_arg8(self)) }
 
     fn dec16<R: Write16 + Read16 + Copy>(self, reg: R) -> Self::R {
         Instruction::DEC16(reg.into_arg16(self))
@@ -102,9 +102,9 @@ impl<'a> Ops for &'a Disassembler {
     fn ret(self) -> Self::R {
         Instruction::RET    
     }
-    fn ret_cond<C: Source<bool>>(self, condition: C) -> Self::R{         Instruction::NOP     }
+    fn ret_cond<C: ReadCond>(self, condition: C) -> Self::R { Instruction::RET_COND(condition.into_cond(self)) }
     fn ld8<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R{
-        Instruction::LD8(dest.into_arg8(&self), source.into_arg8(&self))     
+        Instruction::LD8(dest.into_arg8(self), source.into_arg8(self))
     }
     fn ld8_address_dest<D: ReadAddress, S: Read8>(self, dest: D, source: S) -> Self::R{
         // Instruction::LD8(dest.into_arg8(&self), source.into_arg8(&self))     
@@ -116,7 +116,7 @@ impl<'a> Ops for &'a Disassembler {
         Instruction::NOP
     }
     fn ld16<D: Write16, S: Read16>(self, dest: D, source: S) -> Self::R{
-        Instruction::LD16(dest.into_arg16(&self), source.into_arg16(&self))
+        Instruction::LD16(dest.into_arg16(self), source.into_arg16(self))
     }
 
     fn nop(self) -> Self::R{         Instruction::NOP     }
@@ -138,7 +138,7 @@ impl<'a> Ops for &'a Disassembler {
     fn rla(self) -> Self::R{         Instruction::NOP     }
     fn rlca(self) -> Self::R { Instruction::RLCA }
     fn rra(self) -> Self::R{         Instruction::NOP     }
-    fn rrca(self) -> Self::R{         Instruction::NOP     }
+    fn rrca(self) -> Self::R { Instruction::RRCA }
     fn scf(self) -> Self::R{         Instruction::NOP     }
 
     fn xor<R: Read8>(self, reg: R) -> Self::R { Instruction::XOR(reg.into_arg8(self)) }
