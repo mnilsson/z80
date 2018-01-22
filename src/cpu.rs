@@ -119,16 +119,6 @@ pub struct RelOffset<T: Read16>(pub T);
 pub struct Z80 {
     pub registers: Registers,
 
-    _a: u8,
-    _b: u8,
-    _c: u8,
-    _d: u8,
-    _e: u8,
-    _h: u8,
-    _l: u8,
-
-    _f: u8,
-
 
     pub interrupt_mode: u8,
     iff1: u8,
@@ -152,16 +142,6 @@ impl Z80 {
     pub fn new() -> Z80 {
         Z80 {
             registers: Registers::default(),
-
-            _a: 0,
-            _b: 0,
-            _c: 0,
-            _d: 0,
-            _e: 0,
-            _h: 0,
-            _l: 0,
-
-            _f: 0,
 
             interrupt_mode: 0,
             iff1: 0,
