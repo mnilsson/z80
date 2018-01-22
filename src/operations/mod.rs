@@ -62,6 +62,7 @@ pub trait Ops {
     fn ret(self) -> Self::R;
     fn ret_cond<C: ReadCond>(self, condition: C) -> Self::R;
     fn ld8<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R;
+    fn ld8_int<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R;
     fn ld8_address_dest<D: ReadAddress, S: Read8>(self, dest: D, source: S) -> Self::R;
     fn ld8_address_source<D: Write8, S: ReadAddress>(self, dest: D, source: S) -> Self::R;
     fn ld16<D: Write16, S: Read16>(self, dest: D, source: S) -> Self::R;
@@ -622,7 +623,7 @@ pub fn decode_ed<O: Ops>(ops: O, op: u8) -> O::R {
         0x54 => ops.neg(), // @todo undoc
         0x55 => ops.retn(),
         0x56 => ops.im(1),
-        0x57 => ops.ld8(A, I),
+        0x57 => ops.ld8_int(A, I),
         0x58 => ops.in8(E, C),
         0x59 => ops.out8(C, E),
         0x5a => ops.adc16(HL, DE),
@@ -630,7 +631,7 @@ pub fn decode_ed<O: Ops>(ops: O, op: u8) -> O::R {
         0x5c => ops.neg(), // @todo undoc
         0x5d => ops.retn(),
         0x5e => ops.im(2),
-        0x5f => ops.ld8(A, R),
+        0x5f => ops.ld8_int(A, R),
 
         0x60 => ops.in8(H, C),
         0x61 => ops.out8(C, H),

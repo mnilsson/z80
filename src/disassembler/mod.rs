@@ -106,6 +106,9 @@ impl<'a> Ops for &'a Disassembler {
     fn ld8<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R{
         Instruction::LD8(dest.into_arg8(self), source.into_arg8(self))
     }
+    fn ld8_int<D: Write8, S: Read8>(self, dest: D, source: S) -> Self::R{
+        Instruction::LD8(dest.into_arg8(self), source.into_arg8(self))
+    }
     fn ld8_address_dest<D: ReadAddress, S: Read8>(self, dest: D, source: S) -> Self::R{
         // Instruction::LD8(dest.into_arg8(&self), source.into_arg8(&self))     
         Instruction::NOP

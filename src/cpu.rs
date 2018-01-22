@@ -189,6 +189,7 @@ impl Z80 {
 
     pub fn nmi<B: Bus>(&mut self, bus: &mut B) {
         self.nmi = true;
+        self.iff2 = self.iff1;
         self.iff1 = 0;
         let pc = self.pc;
         self.push_word(bus, pc);
@@ -706,6 +707,15 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
         dest.write8(cpu, bus, val);
         
+    }
+
+    fn ld8_int<D: Write8, S: Read8>(self, dest: D, source: S) {
+        let (cpu, bus) = self;
+
+        let val = source.read8(cpu, bus);
+
+        dest.write8(cpu, bus, val);
+        cpu.registers.set_flag(Parity, cpu.iff2 == 1);
     }
 
     fn ld8_address_dest<D: ReadAddress, S: Read8>(self, dest: D, source: S) {
