@@ -189,7 +189,7 @@ impl Z80 {
     }
 
 
-    fn handle_interrupt<B: Bus>(&mut self, bus: &mut B, int_flags: u8) {
+    pub fn handle_interrupt<B: Bus>(&mut self, bus: &mut B, int_flags: u8) {
     
         if self.iff1 == 0 || self.ei_instr {
             return;
@@ -629,8 +629,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     fn daa(self) {
         let (cpu, bus) = self;
-
-        let mut a = Reg8::A.read8(cpu, bus) as u16;
+        let mut a = Reg8::A.read8(cpu, bus) as i16;
         let n = cpu.registers.get_flag(Subtract);
         let c = cpu.registers.get_flag(Carry);
         let h = cpu.registers.get_flag(HalfCarry);
@@ -651,7 +650,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
             }
         }
 
-        let old_a = Reg8::A.read8(cpu, bus) as u16;
+        let old_a = Reg8::A.read8(cpu, bus) as i16;
         cpu.registers.set_flag(HalfCarry, (old_a ^ a) & 0b1_0000 == 0b1_0000 );
         cpu.szp_flags(a as u8);
         Reg8::A.write8(cpu, bus, a as u8);
