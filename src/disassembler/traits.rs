@@ -200,7 +200,6 @@ impl IntoCond for bool {
         match self {
             true => Cond::True,
             false => Cond::False,
-            _ => unreachable!("invalid cond"),
         }
     }
 }

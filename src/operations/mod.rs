@@ -9,7 +9,7 @@ pub use self::rot_shf::*;
 pub use self::mem_ops::*;
 
 use flags::Flag::*;
-use cpu::{Source, Not, Read8, Read16, Write8, Write16, ReadCond};
+use cpu::{Not, Read8, Read16, Write8, Write16, ReadCond};
 
 
 use registers::Reg8::*;

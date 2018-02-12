@@ -1,10 +1,7 @@
-
-
 use flags::Flag;
 use flags::Flag::*;
 
 use registers::*;
-
 
 use util::make_u16;
 
@@ -20,10 +17,13 @@ pub struct ImmByte;
 pub struct ImmWord;
 
 // use disassembler::Disassembler;
-use disassembler::traits::{IntoArg8, IntoAddress, IntoArg16, IntoCond};
+use disassembler::traits::{IntoAddress, IntoArg16, IntoArg8, IntoCond};
 
 pub enum Indirect {
-    BC, DE, HL, ImmWord,
+    BC,
+    DE,
+    HL,
+    ImmWord,
 }
 
 pub trait Source<T> {
@@ -35,23 +35,18 @@ impl Read8 for u8 {
     }
 }
 
-
-
-
 impl Read16 for u16 {
     fn read16<B: Bus>(self, _: &mut Z80, _: &mut B) -> u16 {
         self
     }
 }
 
-
-
 pub trait Read8: IntoArg8 {
     fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8;
 }
 
 pub trait Write8: IntoArg8 {
-   fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, value: u8); 
+    fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, value: u8);
 }
 
 pub trait Read16: IntoArg16 + IntoAddress {
@@ -59,7 +54,7 @@ pub trait Read16: IntoArg16 + IntoAddress {
 }
 
 pub trait Write16: IntoArg16 + IntoAddress {
-   fn write16<B: Bus>(self, cpu: &mut Z80, bus: &mut B, value: u16); 
+    fn write16<B: Bus>(self, cpu: &mut Z80, bus: &mut B, value: u16);
 }
 
 pub trait ReadCond: IntoCond {
@@ -68,7 +63,9 @@ pub trait ReadCond: IntoCond {
 
 impl Source<bool> for bool {
     #[allow(unused_variables)]
-    fn read<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> bool { self }
+    fn read<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> bool {
+        self
+    }
 }
 
 pub trait Dest<T> {
@@ -76,9 +73,9 @@ pub trait Dest<T> {
 }
 
 impl Source<bool> for Flag {
-    fn read<B: Bus>(self, cpu: &mut Z80, _ : &mut B) -> bool {
+    fn read<B: Bus>(self, cpu: &mut Z80, _: &mut B) -> bool {
         cpu.registers.get_flag(self)
-     }
+    }
 }
 
 impl ReadCond for bool {
@@ -94,10 +91,10 @@ impl ReadCond for Flag {
 }
 
 impl Source<bool> for Not<Flag> {
-    fn read<B: Bus>(self, cpu: &mut Z80, _ : &mut B) -> bool {
+    fn read<B: Bus>(self, cpu: &mut Z80, _: &mut B) -> bool {
         let Not(flag) = self;
         !cpu.registers.get_flag(flag)
-     }
+    }
 }
 
 impl ReadCond for Not<Flag> {
@@ -106,7 +103,6 @@ impl ReadCond for Not<Flag> {
         !cpu.registers.get_flag(flag)
     }
 }
-
 
 pub struct Not<T: Source<bool>>(pub T);
 #[derive(Copy, Clone)]
@@ -118,7 +114,6 @@ pub struct RelOffset<T: Read16>(pub T);
 #[derive(Default)]
 pub struct Z80 {
     pub registers: Registers,
-
 
     pub interrupt_mode: u8,
     iff1: u8,
@@ -135,7 +130,6 @@ pub struct Z80 {
 
     pub t_cycles: u32,
     pub m_cycles: u32,
-
 }
 
 impl Z80 {
@@ -188,9 +182,7 @@ impl Z80 {
         self.pc = 0x66;
     }
 
-
     pub fn handle_interrupt<B: Bus>(&mut self, bus: &mut B, int_flags: u8) {
-    
         if self.iff1 == 0 || self.ei_instr {
             return;
         }
@@ -213,10 +205,14 @@ impl Z80 {
     }
 
     pub fn execute_next_instruction<B: Bus>(&mut self, bus: &mut B) -> u8 {
-
         self.ei_instr = false;
 
-        let instr = if !self.halted { self.read_instruction(bus) } else { bus.tick(1, times::OCF); 0 };
+        let instr = if !self.halted {
+            self.read_instruction(bus)
+        } else {
+            bus.tick(1, times::OCF);
+            0
+        };
 
         ops::decode((self, bus), instr);
         instr
@@ -271,14 +267,13 @@ impl Z80 {
 
         let l = Reg8::L.read8(self, bus);
 
-        self.registers.set_flag(Zero,b == 1);
+        self.registers.set_flag(Zero, b == 1);
         self.registers.set_flag(Subtract, true);
         let carry = l as u16 + b as u16 > 255;
         self.registers.set_flag(Carry, carry);
         self.registers.set_flag(HalfCarry, carry);
         // bus.tick(0, 1);
         // bus.tick(1, times::MR);
-
     }
 
     fn jp_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) {
@@ -305,7 +300,7 @@ impl Z80 {
         0
     }
 
-    pub fn ret< B: Bus>(&mut self, bus: &mut B){
+    pub fn ret<B: Bus>(&mut self, bus: &mut B) {
         // self.pc = self.pop_word(bus);
         self.ret_cond(bus, true);
     }
@@ -359,7 +354,12 @@ impl Z80 {
         self.read_u16(bus) as usize
     }
 
-    fn ex<D: Write16 + Read16 + Copy, S: Write16 + Read16 + Copy, B: Bus>(&mut self, bus: &mut B, dest: D, source: S) {
+    fn ex<D: Write16 + Read16 + Copy, S: Write16 + Read16 + Copy, B: Bus>(
+        &mut self,
+        bus: &mut B,
+        dest: D,
+        source: S,
+    ) {
         let val = source.read16(self, bus);
         let val2 = dest.read16(self, bus);
         dest.write16(self, bus, val);
@@ -376,7 +376,6 @@ impl Z80 {
         self.registers.set_xy(res);
         Reg8::A.write8(self, bus, res);
     }
-
 
     fn inc16<R: Write16 + Read16 + Copy, B: Bus>(&mut self, bus: &mut B, reg: R) {
         let v = reg.read16(self, bus);
@@ -399,14 +398,10 @@ impl Z80 {
         let de = Reg16::DE.read16(self, bus);
         let hl = Reg16::HL.read16(self, bus);
         let hl_val = bus.memory_read(hl as usize);
-        bus.memory_write(
-            de as usize,
-            hl_val
-
-        );
-        self.inc16(bus,Reg16::DE);
-        self.inc16(bus,Reg16::HL);
-        self.dec16(bus,Reg16::BC);
+        bus.memory_write(de as usize, hl_val);
+        self.inc16(bus, Reg16::DE);
+        self.inc16(bus, Reg16::HL);
+        self.dec16(bus, Reg16::BC);
 
         let n = (self.registers.a as u16 + hl_val as u16) as u8;
 
@@ -424,14 +419,10 @@ impl Z80 {
         let de = Reg16::DE.read16(self, bus);
         let hl = Reg16::HL.read16(self, bus);
         let hl_val = bus.memory_read(hl as usize);
-        bus.memory_write(
-            de as usize,
-            hl_val
-
-        );
-        self.dec16(bus,Reg16::DE);
-        self.dec16(bus,Reg16::HL);
-        self.dec16(bus,Reg16::BC);
+        bus.memory_write(de as usize, hl_val);
+        self.dec16(bus, Reg16::DE);
+        self.dec16(bus, Reg16::HL);
+        self.dec16(bus, Reg16::BC);
 
         let n = (self.registers.a as u16 + hl_val as u16) as u8;
         self.registers.set_flag(Y, n & 0b10 != 0);
@@ -449,10 +440,8 @@ impl Z80 {
         let hl = Reg16::HL.read16(self, bus);
         let hl_mem = bus.memory_read(hl as usize);
         let v = a.wrapping_sub(hl_mem);
-        self.inc16(bus,Reg16::HL);
-        self.dec16(bus,Reg16::BC);
-
-
+        self.inc16(bus, Reg16::HL);
+        self.dec16(bus, Reg16::BC);
 
         self.registers.set_flag(Sign, v & 0x80 == 0x80);
         self.registers.set_flag(Zero, v == 0);
@@ -461,8 +450,11 @@ impl Z80 {
         self.registers.set_flag(Parity, bc != 0);
         self.registers.set_flag(Subtract, true);
 
-
-        let n = v - if self.registers.get_flag(HalfCarry) { 1 } else { 0 };
+        let n = v - if self.registers.get_flag(HalfCarry) {
+            1
+        } else {
+            0
+        };
         self.registers.set_flag(Y, n & 0b10 != 0);
         self.registers.set_flag(X, n & 0b1000 != 0);
         16
@@ -477,13 +469,12 @@ impl Z80 {
         } else {
             16
         }
-
     }
 
-    fn lddr<B: Bus>(&mut self, bus: &mut B,) -> u8 {
+    fn lddr<B: Bus>(&mut self, bus: &mut B) -> u8 {
         self.ldd(bus);
         self.registers.set_flag(Parity, false);
-        if Reg16::BC.read16(self, bus)  != 0 {
+        if Reg16::BC.read16(self, bus) != 0 {
             self.pc -= 2;
             21
         } else {
@@ -493,7 +484,7 @@ impl Z80 {
 
     fn cpir<B: Bus>(&mut self, bus: &mut B) -> u8 {
         self.cpi(bus);
-        if Reg16::BC.read16(self, bus)  != 0 && !self.registers.get_flag(Zero){
+        if Reg16::BC.read16(self, bus) != 0 && !self.registers.get_flag(Zero) {
             self.pc -= 2;
             21
         } else {
@@ -501,13 +492,12 @@ impl Z80 {
         }
     }
 
-
     fn rlca<B: Bus>(&mut self, bus: &mut B) {
         let val = Reg8::A.read8(self, bus);
         let res = val << 1 | val >> 7;
-        self.registers.set_flag(Carry,val >> 7 == 1);
-        self.registers.set_flag(Subtract,false);
-        self.registers.set_flag(HalfCarry,false);
+        self.registers.set_flag(Carry, val >> 7 == 1);
+        self.registers.set_flag(Subtract, false);
+        self.registers.set_flag(HalfCarry, false);
         self.registers.set_xy(res);
         Reg8::A.write8(self, bus, res);
     }
@@ -525,7 +515,7 @@ impl Z80 {
 
     pub fn common_rot_flags(&mut self) {
         self.registers.set_flag(HalfCarry, false);
-        self.registers.set_flag(Subtract,false);
+        self.registers.set_flag(Subtract, false);
     }
 
     fn outp<B: Bus>(&mut self, bus: &mut B, port: u16, val: u8) {
@@ -544,8 +534,6 @@ impl Z80 {
         bus.memory_write(self.sp as usize, lo);
         bus.tick(1, times::SWL);
     }
-
-
 
     fn pop_byte<B: Bus>(&mut self, bus: &mut B) -> u8 {
         let sp = self.sp;
@@ -583,7 +571,7 @@ impl Z80 {
             self.iff2 = 0;
 
             let pc = self.pc;
-            self.push_word(bus,pc);
+            self.push_word(bus, pc);
 
             match self.interrupt_mode {
                 0 | 1 => {
@@ -594,22 +582,33 @@ impl Z80 {
                     let inttemp = ((i as u16) << 8) | 0xff;
                     self.pc = bus.memory_read_word(inttemp as usize);
                 }
-                _ => { panic!("Unknown interrupt mode"); }
+                _ => {
+                    panic!("Unknown interrupt mode");
+                }
             }
-
         }
     }
 }
 
-
 use operations::Ops;
-impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
+impl<'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     type R = ();
 
     fn and<R: Read8>(self, reg: R) {
         let (cpu, bus) = self;
         ops::and(cpu, bus, reg);
     }
+
+    fn add8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) {
+        let (cpu, bus) = self;
+        ops::add(cpu, bus, dest, source);
+    }
+
+    fn adc8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) {
+        let (cpu, bus) = self;
+        ops::adc(cpu, bus, dest, source);
+    }
+
     fn nop(self) {
         // nothing
     }
@@ -625,7 +624,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let (cpu, bus) = self;
         cpu.cpl(bus);
     }
-
 
     fn daa(self) {
         let (cpu, bus) = self;
@@ -651,10 +649,10 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         }
 
         let old_a = Reg8::A.read8(cpu, bus) as i16;
-        cpu.registers.set_flag(HalfCarry, (old_a ^ a) & 0b1_0000 == 0b1_0000 );
+        cpu.registers
+            .set_flag(HalfCarry, (old_a ^ a) & 0b1_0000 == 0b1_0000);
         cpu.szp_flags(a as u8);
         Reg8::A.write8(cpu, bus, a as u8);
-
     }
 
     fn dec8<R: Write8 + Read8 + Copy>(self, reg: R) {
@@ -685,7 +683,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let val = source.read8(cpu, bus);
 
         dest.write8(cpu, bus, val);
-        
     }
 
     fn ld8_int<D: Write8, S: Read8>(self, dest: D, source: S) {
@@ -703,7 +700,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let addr = dest.read_address(cpu, bus);
         let val = source.read8(cpu, bus);
         Mem(addr).write8(cpu, bus, val);
-        
     }
 
     fn ld8_address_source<D: Write8, S: ReadAddress>(self, dest: D, source: S) {
@@ -712,9 +708,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let addr = source.read_address(cpu, bus);
         let val = Mem(addr).read8(cpu, bus);
         dest.write8(cpu, bus, val);
-        
     }
-    
 
     fn ld16<D: Write16, S: Read16>(self, dest: D, source: S) {
         let (cpu, bus) = self;
@@ -730,7 +724,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     fn in8_noflags<D: Write8, S: Read8>(self, _dest: D, _source: S) {
         let (cpu, bus) = self;
-        
 
         let addr = cpu.read_u8(bus) as u16 | ((Reg8::A.read8(cpu, bus) as u16) << 8);
         let port_val = bus.port_read(addr as u8);
@@ -760,7 +753,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let v = reg.read16(cpu, bus);
         reg.write16(cpu, bus, v.wrapping_add(1));
         bus.tick(0, 2);
-
     }
 
     fn dec16<R: Write16 + Read16 + Copy>(self, reg: R) {
@@ -783,10 +775,9 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         cpu.jp_cond(bus, cond);
     }
 
-
     fn jr<C: ReadCond>(self, condition: C) {
         let (cpu, bus) = self;
-        
+
         let cond = condition.read_cond(cpu);
         let temp = cpu.read_u8(bus) as i8 as i32;
 
@@ -800,7 +791,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     fn djnz(self) {
         let (cpu, bus) = self;
         let b = Reg8::B.read8(cpu, bus);
-        let b = b.wrapping_sub(1);//((B.read(self, bus) as i32 - 1) & 0xff) as u8;
+        let b = b.wrapping_sub(1); //((B.read(self, bus) as i32 - 1) & 0xff) as u8;
         Reg8::B.write8(cpu, bus, b);
 
         if b != 0 {
@@ -808,7 +799,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         } else {
             cpu.pc += 1; // @todo Not nice!!!
         }
-
     }
 
     fn ret_cond<C: ReadCond>(self, condition: C) {
@@ -821,7 +811,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let (cpu, bus) = self;
         cpu.ret(bus);
     }
-    
 
     fn halt(self) {
         let (cpu, _) = self;
@@ -837,7 +826,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let (cpu, bus) = self;
         cpu.write_port(bus, dest, source)
     }
-
 
     fn out8_noflags<D: Read8, S: Read8>(self, _dest: D, _source: S) {
         let (cpu, bus) = self;
@@ -893,7 +881,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         Reg8::A.write8(cpu, bus, res);
     }
 
-
     fn neg(self) {
         let (cpu, bus) = self;
 
@@ -903,8 +890,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         cpu.registers.set_flag(Parity, temp == 0x80);
         cpu.registers.set_flag(Carry, temp != 0);
     }
-
-
 
     fn retn(self) {
         let (cpu, bus) = self;
@@ -916,19 +901,18 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     fn sbc16<D: Write16 + Read16 + Copy, S: Read16>(self, dest: D, source: S) {
         let (cpu, bus) = self;
-        
+
         let destval = dest.read16(cpu, bus) as u32;
         let val = source.read16(cpu, bus) as u32;
         let carry1 = if cpu.registers.get_flag(Carry) { 1 } else { 0 };
         let lo = ops::raw_sub(cpu, destval as u8, val as u8, carry1);
         let carry = if cpu.registers.get_flag(Carry) { 1 } else { 0 };
-        let hi = ops::raw_sub(cpu, (destval >> 8) as u8, ((val >> 8) as u8), carry);
+        let hi = ops::raw_sub(cpu, (destval >> 8) as u8, (val >> 8) as u8, carry);
         let res = make_u16(lo, hi);
-        
+
         dest.write16(cpu, bus, res);
         cpu.registers.set_flag(Zero, res == 0);
     }
-
 
     fn scf(self) {
         let (cpu, _) = self;
@@ -944,40 +928,58 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     fn adc16<D: Write16 + Read16 + Copy, S: Read16>(self, dest: D, source: S) {
         let (cpu, bus) = self;
-        
+
         let val = source.read16(cpu, bus) as u32;
         let destval = dest.read16(cpu, bus) as u32;
         let carry = if cpu.registers.get_flag(Carry) { 1 } else { 0 };
         let lo = ops::raw_addc(cpu, destval as u8, val as u8, carry);
         let carry = if cpu.registers.get_flag(Carry) { 1 } else { 0 };
-        let hi = ops::raw_addc(cpu, (destval >> 8) as u8, ((val >> 8) as u8), carry);
+        let hi = ops::raw_addc(cpu, (destval >> 8) as u8, (val >> 8) as u8, carry);
         let res = make_u16(lo, hi);
-        Reg16::HL.write16(cpu, bus,res);
+        Reg16::HL.write16(cpu, bus, res);
         cpu.registers.set_flag(Zero, res == 0);
 
         dest.write16(cpu, bus, res as u16);
     }
 
-    fn cpi(self) { let (cpu, bus) = self; cpu.cpi(bus); }
-    fn cpir(self) { let (cpu, bus) = self; cpu.cpir(bus); }
+    fn cpi(self) {
+        let (cpu, bus) = self;
+        cpu.cpi(bus);
+    }
+    fn cpir(self) {
+        let (cpu, bus) = self;
+        cpu.cpir(bus);
+    }
     fn cpd(self) {
-         let (cpu, bus) = self; ops::cpd(cpu, bus); 
+        let (cpu, bus) = self;
+        ops::cpd(cpu, bus);
     }
     fn cpdr(self) {
-
         let (cpu, bus) = self;
 
-        ops::cpd(cpu, bus);        
-        if Reg16::BC.read16(cpu, bus)  != 0 && !cpu.registers.get_flag(Zero) {
+        ops::cpd(cpu, bus);
+        if Reg16::BC.read16(cpu, bus) != 0 && !cpu.registers.get_flag(Zero) {
             cpu.pc -= 2;
-        }     
+        }
     }
 
-    fn ldd(self) { let (cpu, bus) = self; cpu.ldd(bus); }
-    fn lddr(self) { let (cpu, bus) = self; cpu.lddr(bus); }
+    fn ldd(self) {
+        let (cpu, bus) = self;
+        cpu.ldd(bus);
+    }
+    fn lddr(self) {
+        let (cpu, bus) = self;
+        cpu.lddr(bus);
+    }
 
-    fn otir(self) { let (cpu, bus) = self; cpu.otir(bus); }
-    fn ldir(self) { let (cpu, bus) = self; cpu.ldir(bus); }
+    fn otir(self) {
+        let (cpu, bus) = self;
+        cpu.otir(bus);
+    }
+    fn ldir(self) {
+        let (cpu, bus) = self;
+        cpu.ldir(bus);
+    }
 
     fn outd(self) {
         let (cpu, bus) = self;
@@ -997,9 +999,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         cpu.registers.set_flag(Subtract, byte & 0x80 == 0x80);
     }
     fn ini(self) {
-
         let (cpu, bus) = self;
-
 
         let bc = Reg16::BC.read16(cpu, bus);
         let hl = Reg16::HL.read16(cpu, bus);
@@ -1024,7 +1024,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
     fn rrd(self) {
         let (cpu, bus) = self;
-        
+
         let addr = Reg16::HL.read16(cpu, bus) as usize;
         let v = bus.memory_read(addr);
         let a = Reg8::A.read8(cpu, bus);
@@ -1049,7 +1049,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let al = a & 0x0f;
 
         let a = ah | (v >> 4 & 0x0f);
-        Reg8::A.write8(cpu, bus,a);
+        Reg8::A.write8(cpu, bus, a);
         bus.memory_write(addr, (v << 4 | al) & 0xff);
         // wz = addr + 1
         cpu.szp_flags(a);
@@ -1068,7 +1068,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     fn ldi(self) {
         let (cpu, bus) = self;
         cpu.ldi(bus);
-
     }
     fn otdr(self) {
         panic!("otdr?")
@@ -1094,7 +1093,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     fn dd_op(self) {
         let (cpu, bus) = self;
         let op = cpu.read_instruction(bus);
-        
+
         ops::decode_dd((cpu, bus), op);
     }
 
@@ -1121,7 +1120,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
         ops::decode_dd_fd_cb((cpu, bus), address, op)
     }
-
 
     fn ex<D: Write16 + Read16 + Copy, S: Write16 + Read16 + Copy>(self, dest: D, source: S) {
         let (cpu, bus) = self;
@@ -1159,19 +1157,16 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
     fn sll<S: Read8 + Write8 + Copy>(self, source: S) {
         let (cpu, bus) = self;
         ops::sll(cpu, bus, source);
-
     }
 
     fn sra<S: Read8 + Write8 + Copy>(self, source: S) {
         let (cpu, bus) = self;
         ops::sra(cpu, bus, source);
-
     }
 
     fn rl<S: Read8 + Write8 + Copy>(self, source: S) {
         let (cpu, bus) = self;
         ops::rl(cpu, bus, source);
-
     }
     fn rlc<S: Read8 + Write8 + Copy>(self, source: S) {
         let (cpu, bus) = self;
@@ -1193,15 +1188,6 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         ops::rrc(cpu, bus, source);
     }
 
-    fn add8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) {
-        let (cpu, bus) = self;
-        ops::add(cpu, bus, dest, source);
-    }
-    fn adc8<D: Write8 + Read8 + Copy, S: Read8>(self, dest: D, source: S) {
-        let (cpu, bus) = self;
-        ops::adc(cpu, bus, dest, source);
-    }
-
     fn sub8<S: Read8>(self, source: S) {
         let (cpu, bus) = self;
         ops::sub(cpu, bus, source);
@@ -1221,7 +1207,7 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
         let (cpu, bus) = self;
         let cond = condition.read_cond(cpu);
         cpu.call_cond(bus, cond);
-    } 
+    }
 
     fn rst(self, byte: u8) {
         let (cpu, bus) = self;
@@ -1251,14 +1237,14 @@ impl <'a, B: Bus> Ops for (&'a mut Z80, &'a mut B) {
 
         let res = val + destval;
 
-        cpu.registers.set_flag(HalfCarry, ((destval ^ res ^ val) >> 8) & (1 << 4) != 0);
+        cpu.registers
+            .set_flag(HalfCarry, ((destval ^ res ^ val) >> 8) & (1 << 4) != 0);
         cpu.registers.set_flag(Subtract, false);
         cpu.registers.set_flag(Carry, res >> 16 == 1);
         cpu.registers.set_xy((res >> 8) as u8);
 
         dest.write16(cpu, bus, res as u16);
 
-        cpu.registers.xy_int = cpu.registers.h; 
+        cpu.registers.xy_int = cpu.registers.h;
     }
-
 }

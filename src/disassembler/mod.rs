@@ -20,7 +20,7 @@ impl Disassembler {
     }
 }
 
-use cpu::{Write8, Write16, Read8, Read16, Source, ReadCond, ImmByte};
+use cpu::{Write8, Write16, Read8, Read16, ReadCond, ImmByte};
 use operations::Ops;
 use operations::{decode_dd, decode_ed, decode_fd, decode_dd_fd_cb};
 use registers::Reg16;
