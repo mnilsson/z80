@@ -72,7 +72,7 @@ mod test_z80 {
     #[test]
     #[ignore]
     fn run_functional_tests() {
-        let prog = include_bytes!("../roms/zexdoc.com");
+        let prog = include_bytes!("../roms/zexall.com");
 
         let mut p = vec![0xff; 1 << 16];
 
@@ -140,7 +140,7 @@ mod test_z80 {
                             panic!("Unknown CP/M call {}!", cpu.registers.c);
                         }
                     }
-                    cpu.ret(&mut bus);
+                    cpu.pc = cpu.pop_word(&mut bus);
                 }
                 _ => {}
             }

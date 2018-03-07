@@ -3,5 +3,3 @@ name = "z80"
 version = "0.1.0"
 authors = ["Markus Nilsson <markus@mnilsson.se>"]
 
-[dev-dependencies]
-nom = "3.2.0"
