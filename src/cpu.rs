@@ -8,6 +8,8 @@ use util::make_u16;
 
 use operations as ops;
 
+use operations::Ops;
+
 use bus::Bus;
 
 use times;
