@@ -423,7 +423,7 @@ pub fn decode<O: Ops>(ops: O, op: u8) -> O::R {
         0xf5 => ops.push(AF),
         0xf6 => ops.or(ImmByte),
         0xf7 => ops.rst(0x30),
-        0xf8 => ops.ret_cond(Not(Sign)),
+        0xf8 => ops.ret_cond(Sign),
         0xf9 => ops.ld16(SP, HL),
         0xfa => ops.jp_cond(Sign, ImmWord),
         0xfb => ops.ei(),
