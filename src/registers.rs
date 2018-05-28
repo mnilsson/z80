@@ -199,7 +199,7 @@ impl Registers {
 
 
 impl Read8 for Reg8 {
-    fn read8<B: Bus>(self, cpu: &mut Z80, _: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, _: &mut impl Bus) -> u8 {
         use self::Reg8::*;
 
         match self {
@@ -233,7 +233,7 @@ impl Read8 for Reg8 {
 
 
 impl Write8 for Reg8 {
-    fn write8<B: Bus>(self, cpu: &mut Z80, _: &mut B, val: u8) {
+    fn write8(self, cpu: &mut Z80, _: &mut impl Bus, val: u8) {
         use self::Reg8::*;
         match self {
             A => cpu.registers.a = val,
@@ -267,7 +267,7 @@ impl Write8 for Reg8 {
 
 
 impl Read16 for Reg16 {
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         use self::Reg8::*;
         use self::Reg16::*;
         match self {
@@ -291,7 +291,7 @@ impl Read16 for Reg16 {
 
 
 impl Write16 for Reg16 {
-    fn write16<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u16) {
+    fn write16(self, cpu: &mut Z80, bus: &mut impl Bus, val: u16) {
         use self::Reg16::*;
         match self {
             AF => { Reg8::A.write8(cpu, bus, (val >> 8) as u8); Reg8::F.write8(cpu, bus, val as u8);}
@@ -312,14 +312,14 @@ impl Write16 for Reg16 {
 
 
 impl Read8 for ImmByte {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus) -> u8 {
         cpu.read_u8(bus)
     }
 }
 
 
 impl Read16 for ImmWord {
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         // cpu.t_cycles += 3;
         // cpu.m_cycles += 1;
         // cpu.t_cycles += 3;
@@ -329,7 +329,7 @@ impl Read16 for ImmWord {
 }
 
 impl Write8 for Mem<ImmWord> {
-    fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u8) {
+    fn write8(self, cpu: &mut Z80, bus: &mut impl Bus, val: u8) {
         let Mem(imm) = self;
         // cpu.t_cycles += 3;
         // cpu.m_cycles += 1;
@@ -340,7 +340,7 @@ impl Write8 for Mem<ImmWord> {
 }
 
 impl Write16 for Mem<ImmWord> {
-    fn write16<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u16) {
+    fn write16(self, cpu: &mut Z80, bus: &mut impl Bus, val: u16) {
         let Mem(imm) = self;
         // cpu.t_cycles += 3;
         // cpu.m_cycles += 1;
@@ -357,7 +357,7 @@ impl Write16 for Mem<ImmWord> {
 }
 
 impl Write16 for Mem<Reg16> {
-    fn write16<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u16) {
+    fn write16(self, cpu: &mut Z80, bus: &mut impl Bus, val: u16) {
         let Mem(imm) = self;
         
         let addr = imm.read16(cpu, bus);
@@ -371,7 +371,7 @@ impl Write16 for Mem<Reg16> {
 }
 
 impl Write8 for Mem<u16> {
-    fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u8) {
+    fn write8(self, cpu: &mut Z80, bus: &mut impl Bus, val: u8) {
         let Mem(imm) = self;
         let addr = imm.read16(cpu, bus);
         bus.memory_write(addr as usize, val);
@@ -381,7 +381,7 @@ impl Write8 for Mem<u16> {
 }
 
 impl Read16 for Mem<ImmWord> {
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         let Mem(imm) = self;
         let addr = imm.read16(cpu, bus);
         let lo = bus.memory_read(addr as usize);
@@ -393,7 +393,7 @@ impl Read16 for Mem<ImmWord> {
 }
 
 impl Read16 for Mem<Reg16>{
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         let Mem(reg) = self;
         let addr = reg.read16(cpu, bus);
         let lo = bus.memory_read(addr as usize);
@@ -406,7 +406,7 @@ impl Read16 for Mem<Reg16>{
 
 
 impl Write8 for Mem<Reg16> {
-    fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u8) {
+    fn write8(self, cpu: &mut Z80, bus: &mut impl Bus, val: u8) {
         let Mem(imm) = self;
         // cpu.t_cycles += 3;
         // cpu.m_cycles += 1;
@@ -417,7 +417,7 @@ impl Write8 for Mem<Reg16> {
 }
 
 impl Read8 for Mem<Reg16> {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus) -> u8 {
         let Mem(reg) = self;
         let addr = reg.read16(cpu, bus);
         bus.tick(1, times::MR);
@@ -427,7 +427,7 @@ impl Read8 for Mem<Reg16> {
 
 //
 impl Read16 for RelOffset<u16> {
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         let RelOffset(reg) = self;
         let offset = cpu.read_u8(bus) as i8 as i32;
         let val = reg.read16(cpu, bus) as i32;
@@ -437,7 +437,7 @@ impl Read16 for RelOffset<u16> {
 }
 
 impl Read16 for RelOffset<Reg16> {
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         let RelOffset(reg) = self;
         let offset = cpu.read_u8(bus) as i8 as i32;
         let val = reg.read16(cpu, bus) as i32;
@@ -447,7 +447,7 @@ impl Read16 for RelOffset<Reg16> {
 }
 
 impl Write8 for Mem<RelOffset<Reg16>> {
-    fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: u8) {
+    fn write8(self, cpu: &mut Z80, bus: &mut impl Bus, val: u8) {
         let Mem(imm) = self;
         let addr = imm.read16(cpu, bus);
         bus.tick(1, times::MW);
@@ -456,11 +456,11 @@ impl Write8 for Mem<RelOffset<Reg16>> {
 }
 
 pub trait ReadAddress {
-    fn read_address<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16;
+    fn read_address(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16;
 }
 
 impl ReadAddress for Mem<RelOffset<Reg16>> {
-    fn read_address<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16 {
+    fn read_address(self, cpu: &mut Z80, bus: &mut impl Bus) -> u16 {
         let Mem(addr) = self;
         addr.read16(cpu, bus)
     }
@@ -468,7 +468,7 @@ impl ReadAddress for Mem<RelOffset<Reg16>> {
 
 //
 impl Read8 for Mem<RelOffset<Reg16>> {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus) -> u8 {
         let Mem(reg) = self;
         let addr = reg.read16(cpu, bus);
         bus.tick(1, times::MR);
@@ -477,7 +477,7 @@ impl Read8 for Mem<RelOffset<Reg16>> {
 }
 
 impl Read8 for Mem<RelOffset<u16>> {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus) -> u8 {
         let Mem(reg) = self;
         let addr = reg.read16(cpu, bus);
         bus.tick(1, times::MR);
@@ -486,7 +486,7 @@ impl Read8 for Mem<RelOffset<u16>> {
 }
 
 impl Read8 for Mem<ImmWord> {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus) -> u8 {
 
         let Mem(val) = self;
         let addr = val.read16(cpu, bus);
@@ -496,7 +496,7 @@ impl Read8 for Mem<ImmWord> {
 }
 
 impl Read8 for Mem<u16> {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8 {
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus) -> u8 {
         let Mem(val) = self;
         let addr = val.read16(cpu, bus);
         bus.tick(1, times::MR);

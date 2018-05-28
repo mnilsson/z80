@@ -7,7 +7,7 @@ use registers::*;
 
 
 
-pub fn cpd<B: Bus>(cpu: &mut Z80, bus: &mut B) {
+pub fn cpd(cpu: &mut Z80, bus: &mut impl Bus) {
     let a = Reg8::A.read8(cpu, bus);
     let hl = Reg16::HL.read16(cpu, bus);
     let hl_mem = bus.memory_read(hl as usize);

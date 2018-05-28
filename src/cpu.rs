@@ -30,34 +30,34 @@ pub enum Indirect {
 }
 
 pub trait Source<T> {
-    fn read<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> T;
+    fn read(self, cpu: &mut Z80, bus: &mut impl Bus,) -> T;
 }
 impl Read8 for u8 {
-    fn read8<B: Bus>(self, _: &mut Z80, _: &mut B) -> u8 {
+    fn read8(self, _: &mut Z80, _: &mut impl Bus,) -> u8 {
         self
     }
 }
 
 impl Read16 for u16 {
-    fn read16<B: Bus>(self, _: &mut Z80, _: &mut B) -> u16 {
+    fn read16(self, _: &mut Z80, _: &mut impl Bus,) -> u16 {
         self
     }
 }
 
 pub trait Read8: IntoArg8 {
-    fn read8<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u8;
+    fn read8(self, cpu: &mut Z80, bus: &mut impl Bus,) -> u8;
 }
 
 pub trait Write8: IntoArg8 {
-    fn write8<B: Bus>(self, cpu: &mut Z80, bus: &mut B, value: u8);
+    fn write8(self, cpu: &mut Z80, bus: &mut impl Bus, value: u8);
 }
 
 pub trait Read16: IntoArg16 + IntoAddress {
-    fn read16<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> u16;
+    fn read16(self, cpu: &mut Z80, bus: &mut impl Bus,) -> u16;
 }
 
 pub trait Write16: IntoArg16 + IntoAddress {
-    fn write16<B: Bus>(self, cpu: &mut Z80, bus: &mut B, value: u16);
+    fn write16(self, cpu: &mut Z80, bus: &mut impl Bus, value: u16);
 }
 
 pub trait ReadCond: IntoCond {
@@ -66,17 +66,17 @@ pub trait ReadCond: IntoCond {
 
 impl Source<bool> for bool {
     #[allow(unused_variables)]
-    fn read<B: Bus>(self, cpu: &mut Z80, bus: &mut B) -> bool {
+    fn read(self, cpu: &mut Z80, bus: &mut impl Bus,) -> bool {
         self
     }
 }
 
 pub trait Dest<T> {
-    fn write<B: Bus>(self, cpu: &mut Z80, bus: &mut B, val: T);
+    fn write(self, cpu: &mut Z80, bus: &mut impl Bus, val: T);
 }
 
 impl Source<bool> for Flag {
-    fn read<B: Bus>(self, cpu: &mut Z80, _: &mut B) -> bool {
+    fn read(self, cpu: &mut Z80, _: &mut impl Bus,) -> bool {
         cpu.registers.get_flag(self)
     }
 }
@@ -94,7 +94,7 @@ impl ReadCond for Flag {
 }
 
 impl Source<bool> for Not<Flag> {
-    fn read<B: Bus>(self, cpu: &mut Z80, _: &mut B) -> bool {
+    fn read(self, cpu: &mut Z80, _: &mut impl Bus,) -> bool {
         let Not(flag) = self;
         !cpu.registers.get_flag(flag)
     }
@@ -157,14 +157,14 @@ impl Z80 {
         }
     }
 
-    pub fn step<B: Bus>(&mut self, bus: &mut B, int_flags: u8) -> u32 {
+    pub fn step(&mut self, bus: &mut impl Bus, int_flags: u8) -> u32 {
         self.handle_interrupt(bus, int_flags);
         self.execute_next_instruction(bus);
 
         0
     }
 
-    pub fn nmi<B: Bus>(&mut self, bus: &mut B) {
+    pub fn nmi(&mut self, bus: &mut impl Bus,) {
         self.nmi = true;
         self.iff2 = self.iff1;
         self.iff1 = 0;
@@ -174,7 +174,7 @@ impl Z80 {
         self.registers.r = (self.registers.r & 128) + 1;
     }
 
-    pub fn reset_interrupt<B: Bus>(&mut self, bus: &mut B) {
+    pub fn reset_interrupt(&mut self, bus: &mut impl Bus,) {
         if self.iff1 == 0 || self.ei_instr {
             return;
         }
@@ -185,7 +185,7 @@ impl Z80 {
         self.pc = 0x66;
     }
 
-    pub fn handle_interrupt<B: Bus>(&mut self, bus: &mut B, int_flags: u8) {
+    pub fn handle_interrupt(&mut self, bus: &mut impl Bus, int_flags: u8) {
         if self.iff1 == 0 || self.ei_instr {
             return;
         }
@@ -207,7 +207,7 @@ impl Z80 {
         }
     }
 
-    pub fn execute_next_instruction<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    pub fn execute_next_instruction(&mut self, bus: &mut impl Bus,) -> u8 {
         self.ei_instr = false;
 
         let instr = if !self.halted {
@@ -233,7 +233,7 @@ impl Z80 {
 
 
 
-    fn otir<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    fn otir(&mut self, bus: &mut impl Bus,) -> u8 {
         self.outi(bus);
         if Reg8::B.read8(self, bus) != 0 {
             self.pc -= 2;
@@ -243,7 +243,7 @@ impl Z80 {
         }
     }
 
-    fn outi<B: Bus>(&mut self, bus: &mut B) {
+    fn outi(&mut self, bus: &mut impl Bus,) {
         bus.tick(0, 1); // ocf 2 takes 5 tstates
         let hl = Reg16::HL.read16(self, bus);
         let io_val = bus.memory_read(hl as usize);
@@ -266,7 +266,7 @@ impl Z80 {
         // bus.tick(1, times::MR);
     }
 
-    fn jp_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) {
+    fn jp_cond<C: Source<bool>>(&mut self, bus: &mut impl Bus, cond: C) {
         let cond = cond.read(self, bus);
         let addr = self.read_u16(bus);
         if cond {
@@ -274,7 +274,7 @@ impl Z80 {
         }
     }
 
-    fn call_cond<C: Source<bool>, B: Bus>(&mut self, bus: &mut B, cond: C) {
+    fn call_cond<C: Source<bool>>(&mut self, bus: &mut impl Bus, cond: C) {
         bus.tick(0, 1);
         let cond = cond.read(self, bus);
         let addr = ImmWord.read16(self, bus);
@@ -283,7 +283,7 @@ impl Z80 {
         }
     }
 
-    fn write_port<P: Read8, V: Read8, B: Bus>(&mut self, bus: &mut B, port: P, val: V) {
+    fn write_port<P: Read8, V: Read8>(&mut self, bus: &mut impl Bus, port: P, val: V) {
         let port = port.read8(self, bus);
         let val = val.read8(self, bus);
         // println!("out {:x},{:x}", port, val);
@@ -291,7 +291,7 @@ impl Z80 {
         bus.tick(1, times::PW);
     }
 
-    fn read_port<D: Write8, P: Read8, B: Bus>(&mut self, bus: &mut B, reg: D, port: P) {
+    fn read_port<D: Write8, P: Read8>(&mut self, bus: &mut impl Bus, reg: D, port: P) {
         let port = port.read8(self, bus);
         let val = bus.port_read(port);
         bus.tick(1, times::PR);
@@ -304,21 +304,21 @@ impl Z80 {
         // println!("in {:x},{:x}", port, val);
     }
 
-    pub fn read_instruction<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    pub fn read_instruction(&mut self, bus: &mut impl Bus,) -> u8 {
         bus.tick(1, times::OCF);
         let val = bus.memory_read(self.pc as usize);
         self.pc += 1;
         val
     }
 
-    pub fn read_u8<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    pub fn read_u8(&mut self, bus: &mut impl Bus,) -> u8 {
         bus.tick(1, times::OD);
         let val = bus.memory_read(self.pc as usize);
         self.pc += 1;
         val
     }
 
-    pub fn read_u16<B: Bus>(&mut self, bus: &mut B) -> u16 {
+    pub fn read_u16(&mut self, bus: &mut impl Bus,) -> u16 {
         let lo = bus.memory_read(self.pc as usize);
         self.pc += 1;
         bus.tick(1, times::ODL);
@@ -328,11 +328,11 @@ impl Z80 {
         make_u16(lo, hi)
     }
 
-    pub fn read_address<B: Bus>(&mut self, bus: &mut B) -> usize {
+    pub fn read_address(&mut self, bus: &mut impl Bus,) -> usize {
         self.read_u16(bus) as usize
     }
 
-    fn rra<B: Bus>(&mut self, bus: &mut B) {
+    fn rra(&mut self, bus: &mut impl Bus,) {
         let val = Reg8::A.read8(self, bus);
         let carry = if self.registers.get_flag(Carry) { 1 } else { 0 };
         let res = (val >> 1 | carry << 7) & 0xff;
@@ -343,24 +343,24 @@ impl Z80 {
         Reg8::A.write8(self, bus, res);
     }
 
-    fn inc16<R: Write16 + Read16 + Copy, B: Bus>(&mut self, bus: &mut B, reg: R) {
+    fn inc16<R: Write16 + Read16 + Copy>(&mut self, bus: &mut impl Bus, reg: R) {
         let v = reg.read16(self, bus);
         reg.write16(self, bus, v.wrapping_add(1));
     }
 
-    pub fn dec16<R: Write16 + Read16 + Copy, B: Bus>(&mut self, bus: &mut B, reg: R) {
+    pub fn dec16<R: Write16 + Read16 + Copy>(&mut self, bus: &mut impl Bus, reg: R) {
         let v = reg.read16(self, bus);
         reg.write16(self, bus, v.wrapping_sub(1));
     }
 
-    fn call<A: Read16, B: Bus>(&mut self, bus: &mut B, addr: A) {
+    fn call<A: Read16>(&mut self, bus: &mut impl Bus, addr: A) {
         let addr = addr.read16(self, bus);
         let pc = self.pc;
         self.push_word(bus, pc);
         self.pc = addr;
     }
 
-    fn ldi<B: Bus>(&mut self, bus: &mut B) {
+    fn ldi(&mut self, bus: &mut impl Bus,) {
         let de = Reg16::DE.read16(self, bus);
         let hl = Reg16::HL.read16(self, bus);
         let hl_val = bus.memory_read(hl as usize);
@@ -380,7 +380,7 @@ impl Z80 {
         self.registers.set_flag(Subtract, false);
     }
 
-    fn ldd<B: Bus>(&mut self, bus: &mut B) {
+    fn ldd(&mut self, bus: &mut impl Bus,) {
         let de = Reg16::DE.read16(self, bus);
         let hl = Reg16::HL.read16(self, bus);
         let hl_val = bus.memory_read(hl as usize);
@@ -399,7 +399,7 @@ impl Z80 {
         self.registers.set_flag(Subtract, false);
     }
 
-    fn cpi<B: Bus>(&mut self, bus: &mut B) {
+    fn cpi(&mut self, bus: &mut impl Bus,) {
         let a = Reg8::A.read8(self, bus);
         let hl = Reg16::HL.read16(self, bus);
         let hl_mem = bus.memory_read(hl as usize);
@@ -423,7 +423,7 @@ impl Z80 {
         self.registers.set_flag(X, n & 0b1000 != 0);
     }
 
-    fn ldir<B: Bus>(&mut self, bus: &mut B) {
+    fn ldir(&mut self, bus: &mut impl Bus) {
         self.ldi(bus);
         self.registers.set_flag(Parity, false);
         if Reg16::BC.read16(self, bus) != 0 {
@@ -431,7 +431,7 @@ impl Z80 {
         }
     }
 
-    fn lddr<B: Bus>(&mut self, bus: &mut B) {
+    fn lddr(&mut self, bus: &mut impl Bus) {
         self.ldd(bus);
         self.registers.set_flag(Parity, false);
         if Reg16::BC.read16(self, bus) != 0 {
@@ -439,7 +439,7 @@ impl Z80 {
         }
     }
 
-    fn cpir<B: Bus>(&mut self, bus: &mut B) {
+    fn cpir(&mut self, bus: &mut impl Bus) {
         self.cpi(bus);
         if Reg16::BC.read16(self, bus) != 0 && !self.registers.get_flag(Zero) {
             self.pc -= 2;
@@ -451,11 +451,11 @@ impl Z80 {
         self.registers.set_flag(Subtract, false);
     }
 
-    fn outp<B: Bus>(&mut self, bus: &mut B, port: u16, val: u8) {
+    fn outp(&mut self, bus: &mut impl Bus, port: u16, val: u8) {
         bus.port_write(port as u8, val);
     }
 
-    fn push_word<B: Bus>(&mut self, bus: &mut B, word: u16) {
+    fn push_word(&mut self, bus: &mut impl Bus, word: u16) {
         let lo = (word & 0xff) as u8;
         let hi = (word >> 8) as u8;
 
@@ -468,14 +468,14 @@ impl Z80 {
         bus.tick(1, times::SWL);
     }
 
-    fn pop_byte<B: Bus>(&mut self, bus: &mut B) -> u8 {
+    fn pop_byte(&mut self, bus: &mut impl Bus) -> u8 {
         let sp = self.sp;
         let val = bus.memory_read(sp as usize);
         self.sp = sp.wrapping_add(1);
         val
     }
 
-    pub fn pop_word<B: Bus>(&mut self, bus: &mut B) -> u16 {
+    pub fn pop_word(&mut self, bus: &mut impl Bus) -> u16 {
         let lo = self.pop_byte(bus);
         bus.tick(1, times::SRL);
 
@@ -491,7 +491,7 @@ impl Z80 {
         self.registers.set_flag(Parity, v.count_ones() % 2 == 0);
     }
 
-    pub fn interrupt<B: Bus>(&mut self, bus: &mut B) {
+    pub fn interrupt(&mut self, bus: &mut impl Bus) {
         if self.iff1 != 0 {
             if self.halted {
                 self.pc += 1;
