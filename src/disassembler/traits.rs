@@ -1,7 +1,7 @@
 use disassembler::instruction::{Address, Data8, Data16, Cond, Arg8, Arg16};
 use disassembler::Disassembler;
 
-use registers::{Reg8, Reg16, ReadAddress};
+use registers::{Reg8, Reg16};
 use cpu::{Not, ImmByte, ImmWord, Mem, RelOffset};
 use flags::Flag;
 

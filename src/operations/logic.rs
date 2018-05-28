@@ -57,11 +57,10 @@ pub fn cp<S: Read8, B: Bus>(z80: &mut Z80, bus: &mut B, source: S) {
 }
 
 fn common_logic_flags(z80: &mut Z80, val: u8) {
-    let v = val & 0xff;
 
-    z80.registers.set_flag(Parity, v.count_ones() & 1 == 0);
-    z80.registers.set_flag(Zero, v == 0);
-    z80.registers.set_flag(Sign, v & 0x80 == 0x80);
+    z80.registers.set_flag(Parity, val.count_ones() & 1 == 0);
+    z80.registers.set_flag(Zero, val == 0);
+    z80.registers.set_flag(Sign, val & 0x80 == 0x80);
     z80.registers.set_xy(val);
 }
 

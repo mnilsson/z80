@@ -2,11 +2,8 @@ extern crate z80;
 
 #[cfg(test)]
 mod test_z80 {
-    //    use z80::registers::Reg16;
     use z80::cpu::Z80;
     use z80::bus::Bus;
-    use z80::cpu::Source;
-    use z80::cpu::Dest;
 
 
     struct TestBus {

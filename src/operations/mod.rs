@@ -652,6 +652,7 @@ pub fn decode_ed<O: Ops>(ops: O, op: u8) -> O::R {
 
         //        0x70
         //        0x71
+        0x71 => ops.out8(C, 0),
         0x72 => ops.sbc16(HL, SP),
         0x73 => ops.ld16(Mem(ImmWord), SP),
         //        0x74

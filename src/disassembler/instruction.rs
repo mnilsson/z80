@@ -260,7 +260,6 @@ impl fmt::Display for Instruction {
 #[cfg(test)]
 mod test {
     use disassembler::instruction::Instruction;
-    use registers::Reg8;
     #[test]
     fn test_output_correct() {
         let out = format!("{}", Instruction::RRD);
