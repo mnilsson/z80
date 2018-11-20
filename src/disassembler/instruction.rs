@@ -11,7 +11,7 @@ use std::fmt;
 pub struct Data8(pub u8);
 
 impl fmt::Display for Data8 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "${:02x}", self.0)
     }
 }
@@ -19,7 +19,7 @@ impl fmt::Display for Data8 {
 #[derive(Debug)]
 pub struct Data16(pub u16);
 impl fmt::Display for Data16 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
        write!(f, "${:04x}", self.0)
     }
 }
@@ -37,7 +37,7 @@ pub enum Address {
 
 
 impl fmt::Display for Address {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Address::*;
         match *self {
             Direct(ref addr) => write!(f, "{}", addr),
@@ -61,7 +61,7 @@ pub enum Cond {
 }
 
 impl fmt::Display for Cond {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             
             &Cond::Zero => write!(f, "z"),
@@ -82,7 +82,7 @@ pub enum Arg8 {
     Memory(Address),
 }
 impl fmt::Display for Arg8 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Arg8::*;
         match *self {
             Register(reg) => write!(f, "{}", reg),
@@ -99,7 +99,7 @@ pub enum Arg16 {
     Memory(Address),
 }
 impl fmt::Display for Arg16 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Arg16::*;
         match *self {
             Register(reg) => write!(f, "{:?}", reg),
@@ -203,7 +203,7 @@ pub enum Instruction {
 }
 
 impl fmt::Display for Instruction {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match *self {
             Instruction::ADD8(ref d, ref s) => write!(f, "add {},{}", d, s),
             Instruction::ADC8(ref d, ref s) => write!(f, "adc {},{}", d, s),

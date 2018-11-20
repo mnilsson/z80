@@ -8,7 +8,7 @@ use crate::times;
 use std::fmt;
 
 impl fmt::Display for Registers {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "AF: 0x{:02X}{:02X}, BC: 0x{:02X}{:02X} DE: 0x{:02X}{:02X} HL: 0x{:02X}{:02X} Flags: {:08b}", self.a, self.f, self.b, self.c, self.d, self.e, self.h, self.l, self.f)
     }
 }
@@ -42,7 +42,7 @@ pub enum Reg8 {
     _L,
 }
 impl fmt::Display for Reg8 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use self::Reg8::*;
         match *self {
             A => write!(f, "a"),

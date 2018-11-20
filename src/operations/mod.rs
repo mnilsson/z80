@@ -712,19 +712,19 @@ pub fn decode_cb<O: Ops>(ops: O, op: u8) -> O::R {
         0b110 => match reg { Some(r) => ops.sll(r), _ => ops.sll(Mem(HL))},
         0b111 => match reg { Some(r) => ops.srl(r), _ => ops.srl(Mem(HL))},
 
-        0b1000...0b1111 => {
+        0b1000..=0b1111 => {
             let bit = (op >> 3) & 0b111;
               match reg { Some(r) => ops.bit(bit,r), _ => ops.bit(bit,Mem(HL))}
         }
 
         // reset bit
-        0b1_0000...0b1_0111 => {
+        0b1_0000..=0b1_0111 => {
             let bit = (op >> 3) & 0b111;
             match reg { Some(r) => ops.res(bit,r), _ => ops.res(bit,Mem(HL))}
         }
 
         // set bit
-        0b1_1000...0b1_1111 => {
+        0b1_1000..=0b1_1111 => {
             let bit = (op >> 3) & 0b111;
             match reg {
                 Some(r) => ops.set(bit, r),

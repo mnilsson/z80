@@ -4,7 +4,7 @@ pub mod traits;
 
 use crate::bus::Bus;
 pub struct Disassembler {
-    pub bus: Box<Bus>,
+    pub bus: Box<dyn Bus>,
     pub pc: u16
 }
 
