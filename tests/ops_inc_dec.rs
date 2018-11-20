@@ -57,7 +57,7 @@ mod test_z80 {
     fn new_cpu(mut prg: Vec<u8>) -> (Z80, TestBus) {
 
         prg.resize(0x4000, 0);
-        let mut bus = TestBus::new(
+        let bus = TestBus::new(
             prg
         );
         (Z80::new(), bus)

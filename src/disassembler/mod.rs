@@ -2,7 +2,7 @@
 pub mod instruction;
 pub mod traits;
 
-use bus::Bus;
+use crate::bus::Bus;
 pub struct Disassembler {
     pub bus: Box<Bus>,
     pub pc: u16
@@ -20,11 +20,11 @@ impl Disassembler {
     }
 }
 
-use cpu::{Write8, Write16, Read8, Read16, ReadCond, ImmByte};
-use operations::Ops;
-use operations::{decode_cb, decode_dd, decode_ed, decode_fd, decode_dd_fd_cb};
-use registers::Reg16;
-use registers::ReadAddress;
+use crate::cpu::{Write8, Write16, Read8, Read16, ReadCond, ImmByte};
+use crate::operations::Ops;
+use crate::operations::{decode_cb, decode_dd, decode_ed, decode_fd, decode_dd_fd_cb};
+use crate::registers::Reg16;
+use crate::registers::ReadAddress;
 use self::instruction::Instruction;
 use self::traits::IntoArg8;
 

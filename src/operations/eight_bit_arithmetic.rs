@@ -1,8 +1,8 @@
-use cpu::{Z80, Read8, Write8};
+use crate::cpu::{Z80, Read8, Write8};
 
-use flags::Flag::*;
-use bus::Bus;
-use registers::{Reg8};
+use crate::flags::Flag::*;
+use crate::bus::Bus;
+use crate::registers::{Reg8};
 
 pub fn inc_u8<R: Read8 + Write8 + Copy, B: Bus>(z80: &mut Z80, bus: &mut B, reg: R) {
     let val = reg.read8(z80, bus);

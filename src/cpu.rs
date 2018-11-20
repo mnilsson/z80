@@ -1,18 +1,18 @@
 
-use flags::Flag;
-use flags::Flag::*;
+use crate::flags::Flag;
+use crate::flags::Flag::*;
 
-use registers::*;
+use crate::registers::*;
 
-use util::make_u16;
+use crate::util::make_u16;
 
-use operations as ops;
+use crate::operations as ops;
 
-use operations::Ops;
+use crate::operations::Ops;
 
-use bus::Bus;
+use crate::bus::Bus;
 
-use times;
+use crate::times;
 
 #[derive(Debug)]
 pub struct ImmByte;
@@ -20,7 +20,7 @@ pub struct ImmByte;
 pub struct ImmWord;
 
 // use disassembler::Disassembler;
-use disassembler::traits::{IntoAddress, IntoArg16, IntoArg8, IntoCond};
+use crate::disassembler::traits::{IntoAddress, IntoArg16, IntoArg8, IntoCond};
 
 pub enum Indirect {
     BC,

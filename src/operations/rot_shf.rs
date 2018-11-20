@@ -1,6 +1,6 @@
-use cpu::{Z80, Read8, Write8};
-use flags::Flag::*;
-use bus::Bus;
+use crate::cpu::{Z80, Read8, Write8};
+use crate::flags::Flag::*;
+use crate::bus::Bus;
 
 
 pub fn rlc<R: Read8 + Write8 + Copy, B: Bus>(z80: &mut Z80, bus: &mut B, reg: R) {

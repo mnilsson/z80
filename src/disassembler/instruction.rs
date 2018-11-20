@@ -109,7 +109,7 @@ impl fmt::Display for Arg16 {
     }
 }
 
-use registers::{Reg8, Reg16};
+use crate::registers::{Reg8, Reg16};
 
 pub enum Prefix {
     CB,
@@ -259,7 +259,7 @@ impl fmt::Display for Instruction {
 
 #[cfg(test)]
 mod test {
-    use disassembler::instruction::Instruction;
+    use crate::disassembler::instruction::Instruction;
     #[test]
     fn test_output_correct() {
         let out = format!("{}", Instruction::RRD);

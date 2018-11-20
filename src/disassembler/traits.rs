@@ -1,9 +1,9 @@
-use disassembler::instruction::{Address, Data8, Data16, Cond, Arg8, Arg16};
-use disassembler::Disassembler;
+use crate::disassembler::instruction::{Address, Data8, Data16, Cond, Arg8, Arg16};
+use crate::disassembler::Disassembler;
 
-use registers::{Reg8, Reg16};
-use cpu::{Not, ImmByte, ImmWord, Mem, RelOffset};
-use flags::Flag;
+use crate::registers::{Reg8, Reg16};
+use crate::cpu::{Not, ImmByte, ImmWord, Mem, RelOffset};
+use crate::flags::Flag;
 
 pub trait IntoArg8 {
     fn into_arg8(self, disassembler: &Disassembler) -> Arg8;

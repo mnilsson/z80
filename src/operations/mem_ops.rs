@@ -1,8 +1,8 @@
-use cpu::{Z80, Read8, Read16};
+use crate::cpu::{Z80, Read8, Read16};
 
-use flags::Flag::*;
-use bus::Bus;
-use registers::*;
+use crate::flags::Flag::*;
+use crate::bus::Bus;
+use crate::registers::*;
 
 
 

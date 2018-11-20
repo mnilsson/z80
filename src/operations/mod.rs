@@ -8,15 +8,15 @@ pub use self::logic::*;
 pub use self::rot_shf::*;
 pub use self::mem_ops::*;
 
-use flags::Flag::*;
-use cpu::{Not, Read8, Read16, Write8, Write16, ReadCond};
+use crate::flags::Flag::*;
+use crate::cpu::{Not, Read8, Read16, Write8, Write16, ReadCond};
 
 
-use registers::Reg8::*;
-use registers::Reg16::*;
-use registers::Reg16;
-use registers::ReadAddress;
-use cpu::{ImmByte, ImmWord, Mem, RelOffset};
+use crate::registers::Reg8::*;
+use crate::registers::Reg16::*;
+use crate::registers::Reg16;
+use crate::registers::ReadAddress;
+use crate::cpu::{ImmByte, ImmWord, Mem, RelOffset};
 
 
 pub trait Ops {

@@ -1,14 +1,12 @@
-#![allow(cast_lossless)]
 extern crate z80;
 
 #[cfg(test)]
 mod test_io {
     //    use z80::registers::Reg16;
-    use z80::cpu::Z80;
     use z80::bus::Bus;
-    use z80::cpu::Source;
     use z80::cpu::Dest;
-
+    use z80::cpu::Source;
+    use z80::cpu::Z80;
 
     struct TestBus {
         memory: Vec<u8>,
@@ -48,7 +46,6 @@ mod test_io {
 
         #[allow(unused_variables)]
         fn port_write(&mut self, port: u8, byte: u8) {
-
             self.port_data[port as usize] = byte;
         }
 
@@ -65,19 +62,14 @@ mod test_io {
     }
 
     fn new_cpu(mut prg: Vec<u8>) -> (Z80, TestBus) {
-
         prg.resize(0x4000, 0);
-        let mut bus = TestBus::new(
-            prg
-        );
+        let bus = TestBus::new(prg);
         (Z80::new(), bus)
     }
 
     #[test]
-    fn test_out_n_a () {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xd3, 0x01
-        ]);
+    fn test_out_n_a() {
+        let (mut cpu, mut bus) = new_cpu(vec![0xd3, 0x01]);
 
         cpu.registers.a = 0x23;
         cpu.step(&mut bus, 0);
@@ -87,14 +79,12 @@ mod test_io {
     }
 
     #[test]
-    fn test_out_c_r () {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xed, 0x51
-        ]);
+    fn test_out_c_r() {
+        let (mut cpu, mut bus) = new_cpu(vec![0xed, 0x51]);
 
         cpu.registers.c = 0x01;
         cpu.registers.d = 0x5a;
-        
+
         cpu.step(&mut bus, 0);
         assert_eq!(3, bus.m_cycles);
         assert_eq!(12, bus.t_states);
@@ -102,10 +92,8 @@ mod test_io {
     }
 
     #[test]
-    fn test_outi () {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xed, 0xa3
-        ]);
+    fn test_outi() {
+        let (mut cpu, mut bus) = new_cpu(vec![0xed, 0xa3]);
 
         cpu.registers.b = 0x10;
         cpu.registers.c = 0x07;
@@ -114,7 +102,7 @@ mod test_io {
         cpu.registers.l = 0x00;
 
         bus.memory_write(0x1000, 0x59);
-        
+
         cpu.step(&mut bus, 0);
         assert_eq!(0x0f, cpu.registers.b);
         assert_eq!(0x10, cpu.registers.h);
@@ -122,6 +110,5 @@ mod test_io {
         assert_eq!(0x59, bus.port_data[0x07]);
         assert_eq!(4, bus.m_cycles);
         assert_eq!(16, bus.t_states);
-        
     }
 }

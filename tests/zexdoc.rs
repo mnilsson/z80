@@ -63,7 +63,7 @@ mod test_z80 {
 
     fn new_cpu(mut prg: Vec<u8>) -> (Z80, TestBus) {
         prg.resize(0xffff, 0);
-        let mut bus = TestBus::new(prg);
+        let bus = TestBus::new(prg);
         (Z80::new(), bus)
     }
 
@@ -74,7 +74,7 @@ mod test_z80 {
     fn run_functional_tests() {
         let prog = include_bytes!("../roms/zexall.com");
 
-        let mut p = vec![0xff; 1 << 16];
+        let p = vec![0xff; 1 << 16];
 
         let mut offset = 0;
 
