@@ -1,20 +1,19 @@
-
-
 #[cfg(test)]
 mod test_z80 {
-    use z80::cpu::Z80;
-    use z80::bus::Bus;
     use std::io;
     use std::io::Write;
+    use z80::bus::Bus;
+    use z80::cpu::Z80;
+
+    use std::time::Instant;
 
     #[derive(Clone)]
     struct TestBus {
         memory: Vec<u8>,
         pub m_cycles: usize,
-        pub t_states: usize,
+        pub t_states: u64,
         pub ticks: usize,
     }
-
 
     impl TestBus {
         fn new(prg: Vec<u8>) -> TestBus {
@@ -56,8 +55,9 @@ mod test_z80 {
             0xff
         }
 
-        fn tick(&mut self, machine_cycles: u8, _: u8) {
+        fn tick(&mut self, machine_cycles: u8, tstates: u8) {
             self.m_cycles += machine_cycles as usize;
+            self.t_states += tstates as u64;
         }
     }
 
@@ -67,17 +67,16 @@ mod test_z80 {
         (Z80::new(), bus)
     }
 
-
-
     #[test]
     #[ignore]
     fn run_functional_tests() {
+        let start = Instant::now();
+
         let prog = include_bytes!("../roms/zexall.com");
 
         let p = vec![0xff; 1 << 16];
 
         let mut offset = 0;
-
 
         let (mut cpu, mut bus) = new_cpu(p);
         for b in prog.iter() {
@@ -95,16 +94,13 @@ mod test_z80 {
         bus.memory_write(6, 0x00);
         bus.memory_write(7, 0xf0);
 
-
-
-
         let mut num_ops: u64 = 0;
         let mut num_cycles: u64 = 0;
 
         loop {
             num_ops += 1;
             cpu.step(&mut bus, 0);
-            num_cycles += bus.t_states as u64;
+            // num_cycles += bus.t_states as u64;
 
             match cpu.pc {
                 0x0000 => {
@@ -122,7 +118,6 @@ mod test_z80 {
                             let d = cpu.registers.d;
                             let e = cpu.registers.e;
                             let de = ((d as u16) << 8) | (e as u16);
-
 
                             let mut addr = de;
                             loop {
@@ -145,7 +140,16 @@ mod test_z80 {
                 _ => {}
             }
         }
-        println!("{} operations tested", num_ops);
+        let stop = Instant::now();
+        let elapsed = stop - start;
+        println!(
+            "{} operations tested, {} cycles emulated in {} seconds. {} mhz",
+            num_ops,
+            bus.t_states,
+            elapsed.as_secs(),
+            (bus.t_states as f64 / elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9)
+                / 1_000_000.0
+        );
     }
 
 }

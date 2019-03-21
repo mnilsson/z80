@@ -1,13 +1,8 @@
-
-
 #[cfg(test)]
 mod test_z80 {
     //    use z80::registers::Reg16;
-    use z80::cpu::Z80;
     use z80::bus::Bus;
-    use z80::cpu::Source;
-    use z80::cpu::Dest;
-
+    use z80::cpu::Z80;
 
     struct TestBus {
         memory: Vec<u8>,
@@ -59,19 +54,14 @@ mod test_z80 {
     }
 
     fn new_cpu(mut prg: Vec<u8>) -> (Z80, TestBus) {
-
         prg.resize(0x4000, 0);
-        let bus = TestBus::new(
-            prg
-        );
+        let bus = TestBus::new(prg);
         (Z80::new(), bus)
     }
 
     #[test]
     fn test_jp_hl() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xe9
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0xe9]);
 
         cpu.registers.l = 0xff;
         cpu.step(&mut bus, 0);
@@ -81,10 +71,7 @@ mod test_z80 {
     }
     #[test]
     fn test_jp_nn() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xc3, 0xff, 0x00
-        ]);
-
+        let (mut cpu, mut bus) = new_cpu(vec![0xc3, 0xff, 0x00]);
 
         cpu.step(&mut bus, 0);
         assert_eq!(0xff, cpu.pc);
@@ -94,34 +81,29 @@ mod test_z80 {
 
     #[test]
     fn call_returns_to_correct_place() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xcd, 0xff, 0x00
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0xcd, 0xff, 0x00]);
 
         cpu.sp = 0x2000;
         bus.memory_write_word(0x00ff, 0xc9);
         cpu.step(&mut bus, 0);
         assert_eq!(0xff, cpu.pc);
         assert_eq!(5, bus.m_cycles);
-        assert_eq!(17, bus.t_states); 
+        assert_eq!(17, bus.t_states);
         cpu.step(&mut bus, 0);
         assert_eq!(0x03, cpu.pc);
         assert_eq!(0x2000, cpu.sp);
     }
 
-
     #[test]
     fn test_rst() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0xff,
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0xff]);
 
         cpu.sp = 0x2000;
 
         cpu.step(&mut bus, 0);
         assert_eq!(0x38, cpu.pc);
         // assert_eq!(3, bus.m_cycles);
-        // assert_eq!(11, bus.t_states); 
+        // assert_eq!(11, bus.t_states);
         let val = bus.memory_read_word(0x1ffe);
         assert_eq!(0x01, val);
     }

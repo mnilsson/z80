@@ -1,14 +1,9 @@
-
-
 #[cfg(test)]
 mod test_z80 {
 
-//    use z80::registers::Reg16;
-    use z80::cpu::Z80;
+    //    use z80::registers::Reg16;
     use z80::bus::Bus;
-    use z80::cpu::Source;
-    use z80::cpu::Dest;
-
+    use z80::cpu::Z80;
 
     struct TestBus {
         memory: Vec<u8>,
@@ -45,9 +40,7 @@ mod test_z80 {
         }
 
         #[allow(unused_variables)]
-        fn port_write(&mut self, port: u8, byte: u8) {
-
-        }
+        fn port_write(&mut self, port: u8, byte: u8) {}
 
         #[allow(unused_variables)]
         fn port_read(&mut self, port: u8) -> u8 {
@@ -62,23 +55,18 @@ mod test_z80 {
 
     #[test]
     fn test_ld_r_r() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x41
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0x41]);
 
         cpu.registers.c = 0x10;
         cpu.step(&mut bus, 0);
         assert_eq!(0x10, cpu.registers.b);
         assert_eq!(1, bus.m_cycles);
         assert_eq!(4, bus.t_states);
-
     }
 
     #[test]
     fn test_ld_r_memhl() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x4e
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0x4e]);
 
         bus.memory_write(0xff, 0x20);
         cpu.registers.l = 0xff;
@@ -87,14 +75,11 @@ mod test_z80 {
         assert_eq!(0x20, cpu.registers.c);
         assert_eq!(2, bus.m_cycles);
         assert_eq!(7, bus.t_states);
-
     }
 
     #[test]
     fn test_ld_memhl_r() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x70
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0x70]);
 
         bus.memory_write(0xff, 0x20);
         cpu.registers.l = 0xff;
@@ -105,39 +90,26 @@ mod test_z80 {
         assert_eq!(0x15, bus.memory_read(0xff));
         assert_eq!(7, bus.t_states);
         assert_eq!(2, bus.m_cycles);
-
     }
 
     #[test]
     fn test_ld_r_mem_immword() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x3a,0x11, 0x00
-        ]);
-
-
+        let (mut cpu, mut bus) = new_cpu(vec![0x3a, 0x11, 0x00]);
 
         bus.memory_write(0x0011, 0x1);
         cpu.registers.a = 0;
-        
 
         cpu.step(&mut bus, 0);
         assert_eq!(0x1, cpu.registers.a);
         // assert_eq!(7, bus.t_states);
         // assert_eq!(2, bus.m_cycles);
-
     }
-
 
     #[test]
     fn test_ld_r_immbyte() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x06, 0x11
-        ]);
-
-
+        let (mut cpu, mut bus) = new_cpu(vec![0x06, 0x11]);
 
         cpu.registers.b = 0x06;
-
 
         cpu.step(&mut bus, 0);
         assert_eq!(0x11, cpu.registers.b);
@@ -147,14 +119,9 @@ mod test_z80 {
 
     #[test]
     fn test_ld_memhl_immbyte() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x36, 0x11
-        ]);
+        let (mut cpu, mut bus) = new_cpu(vec![0x36, 0x11]);
 
         cpu.registers.l = 0xff;
-
-
-
 
         cpu.step(&mut bus, 0);
         assert_eq!(0x11, bus.memory_read(0xff));
@@ -164,10 +131,7 @@ mod test_z80 {
 
     #[test]
     fn test_ld_rr_immword() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x11, 0x12, 0x34
-        ]);
-
+        let (mut cpu, mut bus) = new_cpu(vec![0x11, 0x12, 0x34]);
 
         cpu.registers.d = 0x1;
         cpu.registers.e = 0x2;
@@ -184,10 +148,7 @@ mod test_z80 {
 
     #[test]
     fn test_ld_rr_memimmword() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x2a, 0x34, 0x12
-        ]);
-
+        let (mut cpu, mut bus) = new_cpu(vec![0x2a, 0x34, 0x12]);
 
         cpu.registers.h = 0x1;
         cpu.registers.l = 0x1;
@@ -203,10 +164,7 @@ mod test_z80 {
 
     #[test]
     fn test_ld_memimmword_rr() {
-        let (mut cpu, mut bus) = new_cpu(vec![
-            0x22, 0x34, 0x12
-        ]);
-
+        let (mut cpu, mut bus) = new_cpu(vec![0x22, 0x34, 0x12]);
 
         cpu.registers.h = 0x1;
         cpu.registers.l = 0x1;
@@ -222,11 +180,8 @@ mod test_z80 {
     }
 
     fn new_cpu(mut prg: Vec<u8>) -> (Z80, TestBus) {
-
         prg.resize(0x4000, 0);
-        let bus = TestBus::new(
-            prg
-        );
+        let bus = TestBus::new(prg);
         (Z80::new(), bus)
     }
 }
